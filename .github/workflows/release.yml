@@ -1,0 +1,113 @@
+# GenomeForge Release Workflow
+#
+# Triggered by version tags (v*.*.*).
+# Builds and pushes all Docker images to GHCR.
+# Creates a GitHub Release with auto-generated release notes.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  release:
+    name: Build, push, and release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write       # Create GitHub Release
+      packages: write       # Push to GHCR
+      id-token: write       # OIDC for cosign signing
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # Full history for release notes
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push pipeline image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.pipeline
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/pipeline:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/pipeline:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.title=GenomeForge Pipeline
+            org.opencontainers.image.description=DRAGEN-GATK WGS clinical interpretation pipeline
+
+      - name: Build and push beacon image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.beacon
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/beacon:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/beacon:latest
+
+      - name: Build and push daemon image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/Dockerfile.daemon
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ github.repository }}/daemon:${{ steps.version.outputs.VERSION }}
+            ${{ env.REGISTRY }}/${{ github.repository }}/daemon:latest
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build BayesACMG wheel
+        run: |
+          pip install build
+          python -m build bayesacmg/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            bayesacmg/dist/*.whl
+            bayesacmg/dist/*.tar.gz
+          body: |
+            ## GenomeForge ${{ steps.version.outputs.VERSION }}
+
+            ### Stack
+            - DRAGEN-GATK 4.6.0.0 · DeepVariant 1.8.0 · VEP v111
+            - BayesACMG 0.1.0 (ACGS 2024 v1.2 + ClinGen SVI 2024)
+            - GA4GH Beacon v2.1.1 · VRS v2.0 · FHIR R4 IG v3.0.0
+
+            ### Docker images
+            ```
+            ghcr.io/${{ github.repository }}/pipeline:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ github.repository }}/beacon:${{ steps.version.outputs.VERSION }}
+            ghcr.io/${{ github.repository }}/daemon:${{ steps.version.outputs.VERSION }}
+            ```

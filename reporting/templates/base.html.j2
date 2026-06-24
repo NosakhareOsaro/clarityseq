@@ -1,0 +1,320 @@
+{# base.html.j2 — NHS GMS-style clinical report base template
+   ACGS Best Practice Guidelines 2024 v1.2 (Durkie et al.)
+   Includes all sections: variant table, mito, expansions, PGx.
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NHS GMS WGS Clinical Report — {{ config.patient_id }}</title>
+<style>
+  /* NHS Identity compliant styles
+     https://www.england.nhs.uk/nhsidentity/ */
+  @import url('https://fonts.googleapis.com/css2?family=Frutiger:wght@400;700&display=swap');
+
+  :root {
+    --nhs-blue: #003087;
+    --nhs-dark-blue: #00205B;
+    --nhs-mid-blue: #005EB8;
+    --nhs-light-blue: #41B6E6;
+    --nhs-green: #009639;
+    --nhs-red: #DA291C;
+    --nhs-orange: #ED8B00;
+    --nhs-pale-grey: #F0F4F5;
+    --nhs-mid-grey: #768692;
+    --nhs-dark-grey: #425563;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    font-family: 'Frutiger', Arial, Helvetica, sans-serif;
+    font-size: 11pt;
+    line-height: 1.5;
+    color: #212B32;
+    margin: 0;
+    padding: 0;
+  }
+
+  .nhs-header {
+    background: var(--nhs-blue);
+    color: white;
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .nhs-header h1 {
+    margin: 0;
+    font-size: 16pt;
+    font-weight: 700;
+    color: white;
+  }
+
+  .nhs-header .logo {
+    font-size: 28pt;
+    font-weight: 900;
+    background: white;
+    color: var(--nhs-blue);
+    padding: 2px 10px;
+    letter-spacing: 2px;
+  }
+
+  .report-body {
+    padding: 20px 28px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  h2 {
+    color: var(--nhs-blue);
+    border-bottom: 2px solid var(--nhs-blue);
+    padding-bottom: 4px;
+    margin-top: 28px;
+    font-size: 13pt;
+  }
+
+  h3 {
+    color: var(--nhs-dark-grey);
+    font-size: 11pt;
+    margin-top: 16px;
+  }
+
+  .patient-info-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 10pt;
+  }
+
+  .patient-info-table th {
+    background: var(--nhs-pale-grey);
+    color: var(--nhs-dark-grey);
+    font-weight: 700;
+    padding: 6px 10px;
+    text-align: left;
+    width: 18%;
+    border: 1px solid #d8dde0;
+  }
+
+  .patient-info-table td {
+    padding: 6px 10px;
+    border: 1px solid #d8dde0;
+  }
+
+  /* Variant table */
+  .variant-table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 12px 0;
+    font-size: 8.5pt;
+  }
+
+  .variant-table thead tr {
+    background: var(--nhs-blue);
+    color: white;
+  }
+
+  .variant-table th {
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid var(--nhs-dark-blue);
+  }
+
+  .variant-table td {
+    padding: 5px 8px;
+    border: 1px solid #d8dde0;
+    vertical-align: top;
+  }
+
+  .variant-table tbody tr:nth-child(even) {
+    background: var(--nhs-pale-grey);
+  }
+
+  .variant-table tbody tr:hover {
+    background: #e8f0f8;
+  }
+
+  /* Classification badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: 8pt;
+  }
+
+  .badge-pathogenic    { background: #FFE0E0; color: var(--nhs-red); }
+  .badge-lp            { background: #FFE8CC; color: var(--nhs-orange); }
+  .badge-vus           { background: #FFF3CC; color: #8B6900; }
+  .badge-lb            { background: #E0F0E0; color: var(--nhs-green); }
+  .badge-benign        { background: #C8E6C9; color: #1B5E20; }
+
+  .pending-clinvar {
+    background: #FFF3E0;
+    border-left: 3px solid var(--nhs-orange);
+    padding: 4px 8px;
+    margin: 2px 0;
+    font-size: 8pt;
+    color: var(--nhs-dark-grey);
+  }
+
+  .vus-review {
+    color: var(--nhs-mid-grey);
+    font-size: 8pt;
+  }
+
+  /* Summary box */
+  .summary-box {
+    background: var(--nhs-pale-grey);
+    border-left: 4px solid var(--nhs-mid-blue);
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+  }
+
+  .summary-box p { margin: 4px 0; }
+
+  /* Footer */
+  .report-footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid #d8dde0;
+    font-size: 8pt;
+    color: var(--nhs-mid-grey);
+    page-break-inside: avoid;
+  }
+
+  /* Page breaks for PDF */
+  @page {
+    size: A4;
+    margin: 2cm 2cm 2.5cm 2cm;
+    @bottom-center {
+      content: "Page " counter(page) " of " counter(pages) " | GenomeForge WGS Report | ACGS 2024 v1.2";
+      font-size: 8pt;
+      color: #768692;
+    }
+  }
+
+  h2 { page-break-after: avoid; }
+  table { page-break-inside: auto; }
+  tr { page-break-inside: avoid; page-break-after: auto; }
+
+  .no-variants {
+    color: var(--nhs-mid-grey);
+    font-style: italic;
+    padding: 8px;
+  }
+</style>
+</head>
+<body>
+
+{# NHS header #}
+<div class="nhs-header">
+  <div class="logo">NHS</div>
+  <h1>Whole Genome Sequencing Clinical Report</h1>
+  <div style="text-align: right; font-size: 9pt;">
+    {{ config.laboratory }}<br>
+    Report Date: {{ config.report_date }}<br>
+    ACGS {{ config.acgs_version }}
+  </div>
+</div>
+
+<div class="report-body">
+
+{# Patient and referral information #}
+<h2>Patient and Referral Information</h2>
+<table class="patient-info-table">
+  <tr>
+    <th>Patient ID</th>
+    <td>{{ config.patient_id }}</td>
+    <th>Sample ID</th>
+    <td>{{ config.sample_id }}</td>
+  </tr>
+  <tr>
+    <th>Report Date</th>
+    <td>{{ config.report_date }}</td>
+    <th>Referring Clinician</th>
+    <td>{{ config.referring_clinician }}</td>
+  </tr>
+  <tr>
+    <th>Referral Indication</th>
+    <td colspan="3">{{ config.referral_indication }}</td>
+  </tr>
+  <tr>
+    <th>Genome Assembly</th>
+    <td>{{ config.assembly }}</td>
+    <th>Pipeline</th>
+    <td>GenomeForge v{{ config.pipeline_version }}</td>
+  </tr>
+</table>
+
+{# Summary of findings #}
+<h2>Summary of Findings</h2>
+<div class="summary-box">
+  {% set p_count = variants | selectattr("acmg_class", "equalto", "Pathogenic") | list | length %}
+  {% set lp_count = variants | selectattr("acmg_class", "equalto", "Likely_Pathogenic") | list | length %}
+  {% set vus_count = variants | selectattr("acmg_class", "equalto", "VUS") | list | length %}
+  {% set pending_count = variants | selectattr("pending_clinvar_submission") | list | length %}
+  <p><strong>Nuclear variants reported:</strong> {{ variants | length }}</p>
+  <p><strong>Pathogenic:</strong> {{ p_count }} | <strong>Likely Pathogenic:</strong> {{ lp_count }} | <strong>VUS:</strong> {{ vus_count }}</p>
+  {% if mito_variants %}
+  <p><strong>Mitochondrial variants:</strong> {{ mito_variants | length }}</p>
+  {% endif %}
+  {% if pending_count > 0 %}
+  <p><strong style="color: #ED8B00;">Novel P/LP variants pending ClinVar submission:</strong> {{ pending_count }}</p>
+  {% endif %}
+</div>
+
+{# Nuclear variant table #}
+{% include "variants.html.j2" %}
+
+{# Mitochondrial section (ACGS 2024 §6) #}
+{% if config.include_mito %}
+{% include "mito.html.j2" %}
+{% endif %}
+
+{# Repeat expansion section #}
+{% if config.include_expansions %}
+{% include "expansions.html.j2" %}
+{% endif %}
+
+{# Pharmacogenomics section #}
+{% if config.include_pgx %}
+{% include "pgx.html.j2" %}
+{% endif %}
+
+{# Footer with classification scheme citation #}
+<div class="report-footer">
+  <p><strong>Classification Scheme:</strong>
+  Richards et al. 2015 (PMID:25741868);
+  Tavtigian et al. 2020 (PMID:32645316) — point-score system;
+  ACGS Best Practice Guidelines {{ config.acgs_version }} (Durkie et al., 20 Feb 2024);
+  ClinGen SVI Working Group 2024 — PM2=Supporting (1 pt).
+  AlphaMissense thresholds: ≥0.564→PP3, ≤0.340→BP4 (Cheng et al. 2023 PMID:37703350).
+  MANE Select transcript notation per Morales et al. 2022 (PMID:35356062).
+  </p>
+  <p><strong>Data Sources:</strong>
+  VEP {{ config.vep_version }} |
+  gnomAD v{{ config.gnomad_version }} (April 2024, 807,162 individuals) |
+  AlphaMissense (Cheng et al. 2023) |
+  ClinVar (accessed {{ config.report_date }}).
+  </p>
+  <p>
+  VUS review dates scheduled per ACGS 2024 §9 (mandatory 2-year review).
+  Novel P/LP variants flagged for ClinVar submission per ACGS 2024 §5.
+  Haplogroup determined by Haplogrep3 (Weissensteiner et al. 2021) and reported first per ACGS 2024 §6.
+  </p>
+  <p style="color: #DA291C; font-weight: bold;">
+  This report has been generated using automated variant classification.
+  All classifications require review by an authorised clinical scientist before clinical use.
+  </p>
+</div>
+
+</div>{# /report-body #}
+</body>
+</html>

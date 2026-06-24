@@ -1,0 +1,223 @@
+# =============================================================================
+# GenomeForge .gitignore
+# =============================================================================
+# Comprehensive ignore list for genomics pipeline, Python, Terraform, and secrets.
+# Never commit raw genomic data, credentials, or large binary files.
+
+# =============================================================================
+# Genomic data files — NEVER commit these (can be multi-GB)
+# =============================================================================
+*.fastq
+*.fastq.gz
+*.fq
+*.fq.gz
+*.bam
+*.bam.bai
+*.cram
+*.cram.crai
+*.vcf
+*.vcf.gz
+*.vcf.gz.tbi
+*.gvcf
+*.gvcf.gz
+*.gvcf.gz.tbi
+*.bcf
+*.bcf.csi
+*.bed.gz
+*.bed.gz.tbi
+*.sam
+*.fa
+*.fasta
+*.fa.gz
+*.fasta.gz
+*.fa.fai
+*.fasta.fai
+*.dict
+
+# AlphaMissense pre-computed scores — 2.7 GB, download separately
+# See: gs://dm_alphamissense/AlphaMissense_hg38.tsv.gz
+AlphaMissense_hg38.tsv.gz*
+
+# DRAGMAP reference hash tables — built with dragen-os --build-hash-table
+# These are large binary files; rebuild from FASTA as needed
+*.dragen.hash
+*.dragen.hash.gz
+
+# dbNSFP database files — multi-GB tabix-indexed files
+dbNSFP4*.gz
+dbNSFP4*.gz.tbi
+
+# =============================================================================
+# Nextflow pipeline directories
+# =============================================================================
+# Nextflow work directory — intermediate task files (can be hundreds of GB)
+work/
+# Nextflow results output — large genomic outputs
+results/
+# Nextflow hidden state
+.nextflow/
+.nextflow.log*
+# Nextflow tower token
+.nextflow_tower_token
+
+# =============================================================================
+# Terraform — state files contain secrets and must NEVER be committed
+# =============================================================================
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfstate.*.backup
+terraform.tfvars
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+crash.*.log
+
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+MANIFEST
+
+# =============================================================================
+# Python testing and linting caches
+# =============================================================================
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+nosetests.xml
+pytest-cache/
+*.prof
+
+# =============================================================================
+# Virtual environments — never commit these
+# =============================================================================
+venv/
+.venv/
+ENV/
+env/
+conda-env/
+.conda/
+*.conda
+
+# =============================================================================
+# Secrets and credentials — CRITICAL: never commit
+# =============================================================================
+.env
+.env.local
+.env.production
+.env.staging
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.crt
+*.csr
+*_rsa
+*_dsa
+*_ecdsa
+*_ed25519
+id_rsa
+id_dsa
+.secrets.baseline
+secrets.json
+credentials.json
+service_account.json
+# AWS credentials (in addition to .env)
+.aws/credentials
+
+# =============================================================================
+# Docker
+# =============================================================================
+*.tar
+*.tar.gz
+# Docker credential helpers are local only
+docker-credential-*
+
+# =============================================================================
+# IDE and editor files
+# =============================================================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+.vim/
+
+# =============================================================================
+# Documentation build artifacts
+# =============================================================================
+docs/_build/
+docs/.doctrees/
+site/
+_site/
+.cache/
+
+# =============================================================================
+# Jupyter notebooks (outputs can contain patient data)
+# =============================================================================
+*.ipynb_checkpoints/
+.ipynb_checkpoints/
+
+# =============================================================================
+# Logs — contain pipeline run details; large and environment-specific
+# =============================================================================
+*.log
+*.log.*
+logs/
+pipeline_info/
+
+# =============================================================================
+# Benchmark results — large output files; store in S3
+# =============================================================================
+benchmark/results/*.vcf*
+benchmark/results/*.bam*
+benchmark/results/*.html
+
+# =============================================================================
+# Node.js (for any frontend tooling)
+# =============================================================================
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# =============================================================================
+# Local configuration overrides
+# =============================================================================
+local.config
+nextflow_local.config
+*.local.config

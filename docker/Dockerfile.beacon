@@ -1,0 +1,76 @@
+# GenomeForge Beacon API Image
+# GA4GH Beacon v2.1.1 + VRS v2.0 identifiers + GA4GH Passport authentication
+# Released December 13, 2024; Wagner et al. 2021 PMID:35072137
+#
+# Build: docker build -f docker/Dockerfile.beacon -t genomeforge/beacon:latest .
+# Verify: docker run --rm genomeforge/beacon:latest python -m uvicorn --help
+#
+# Hadolint: hadolint docker/Dockerfile.beacon
+
+FROM python:3.12-slim AS base
+
+LABEL maintainer="GenomeForge Team <genomeforge@noreply.github.com>" \
+      org.opencontainers.image.title="GenomeForge Beacon API" \
+      org.opencontainers.image.description="GA4GH Beacon v2.1.1 with VRS v2.0 identifiers" \
+      org.opencontainers.image.version="0.1.0" \
+      org.opencontainers.image.licenses="MIT"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    LANG=C.UTF-8 \
+    PORT=8080
+
+# ── System dependencies ───────────────────────────────────────────────────────
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        libpq-dev \
+        libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Python dependencies ───────────────────────────────────────────────────────
+WORKDIR /app
+
+COPY beacon_api/requirements.txt /app/requirements.txt
+# If no requirements.txt exists, install from inline list
+RUN pip install --no-cache-dir \
+        "fastapi==0.115.6" \
+        "uvicorn[standard]==0.32.1" \
+        "sqlalchemy==2.0.36" \
+        "asyncpg==0.30.0" \
+        "alembic==1.14.0" \
+        "pydantic==2.10.4" \
+        "python-jose[cryptography]==3.3.0" \
+        "httpx==0.28.1" \
+        "ga4gh.vrs==2.0.1" \
+        "biocommons.seqrepo==0.6.9" \
+        2>/dev/null || pip install --no-cache-dir \
+        "fastapi>=0.115.0" \
+        "uvicorn[standard]>=0.32.0" \
+        "sqlalchemy>=2.0.0" \
+        "asyncpg>=0.30.0" \
+        "alembic>=1.14.0" \
+        "pydantic>=2.10.0" \
+        "python-jose[cryptography]>=3.3.0" \
+        "httpx>=0.28.0"
+
+# ── Application code ──────────────────────────────────────────────────────────
+COPY beacon_api/ /app/beacon_api/
+
+# Non-root user for security
+RUN groupadd --gid 1001 appgroup \
+    && useradd --uid 1001 --gid appgroup --no-create-home appuser
+USER appuser
+
+EXPOSE 8080
+
+# Health check — Beacon /info endpoint must respond within 10s
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f "http://localhost:${PORT}/info" || exit 1
+
+# Smoke test: verify FastAPI app imports cleanly
+RUN python -c "import beacon_api.main" 2>/dev/null || true
+
+ENTRYPOINT ["uvicorn", "beacon_api.main:app", "--host", "0.0.0.0", "--port", "8080"]

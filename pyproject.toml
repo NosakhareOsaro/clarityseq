@@ -1,0 +1,246 @@
+# =============================================================================
+# GenomeForge — Root pyproject.toml
+# =============================================================================
+# Configures code quality tools for the entire monorepo.
+# Python 3.12 is required exactly — see docs/setup/prerequisites.md.
+# Individual packages (e.g., bayesacmg/) have their own pyproject.toml.
+# =============================================================================
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "genomeforge"
+version = "0.1.0"
+description = "Production WGS clinical interpretation: DRAGEN-GATK + pangenome + Bayesian ACMG (ACGS 2024 v1.2)"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = "==3.12.*"
+authors = [
+    { name = "GenomeForge Contributors", email = "osaronosakhare@gmail.com" },
+]
+keywords = [
+    "wgs",
+    "genomics",
+    "dragen-gatk",
+    "acmg",
+    "acgs-2024",
+    "clinvar",
+    "beacon",
+    "pangenome",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Healthcare Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+]
+
+# Core runtime dependencies — all versions pinned per §0.3 standard
+dependencies = [
+    "asyncpg==0.29.0",          # PostgreSQL async driver
+    "sqlalchemy[asyncio]==2.0.30",
+    "redis==5.0.3",             # Redis 7.x client
+    "celery[redis]==5.3.6",     # Reclassification daemon broker
+    "fastapi==0.111.0",         # Beacon API framework
+    "uvicorn[standard]==0.29.0",
+    "httpx==0.27.0",            # Async HTTP for API clients
+    "pydantic==2.7.1",          # Data validation
+    "pymc==5.13.1",             # Bayesian ACMG model (see ADR-002)
+    "jinja2==3.1.4",            # Clinical report templating
+    "weasyprint==62.1",         # HTML→PDF report renderer
+    "ga4gh.vrs==2.0.0a5",       # VRS v2.0 variant identifiers
+    "phenopackets==2.0.3",      # Phenopackets v2 SDK
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.2.0",
+    "pytest-asyncio==0.23.6",
+    "pytest-cov==5.0.0",
+    "black==24.4.2",
+    "ruff==0.4.4",
+    "mypy==1.10.0",
+    "pre-commit==3.7.1",
+    "detect-secrets==1.4.0",
+]
+docs = [
+    "sphinx==7.3.7",
+    "sphinx-rtd-theme==2.0.0",
+    "myst-parser==3.0.1",
+]
+
+# =============================================================================
+# Black — code formatter
+# =============================================================================
+[tool.black]
+# 88 characters is Black's default and matches most modern screens
+line-length = 88
+target-version = ["py312"]
+# Exclude generated files and migration files
+exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.mypy_cache
+  | \.ruff_cache
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | docs/_build
+)/
+'''
+
+# =============================================================================
+# Ruff — fast Python linter (replaces flake8 + isort + pyupgrade)
+# =============================================================================
+[tool.ruff]
+# Match Black line length
+line-length = 88
+target-version = "py312"
+
+[tool.ruff.lint]
+# Rule sets enabled per project standard (§0.3):
+# E/F — pycodestyle errors + pyflakes (baseline correctness)
+# I   — isort import ordering
+# B   — flake8-bugbear (common bugs and design issues)
+# UP  — pyupgrade (enforce modern Python 3.12 idioms)
+# ANN — flake8-annotations (enforce type annotations on all functions)
+select = ["E", "F", "I", "B", "UP", "ANN"]
+ignore = [
+    "ANN101",  # Missing type annotation for 'self' in method — unnecessary
+    "ANN102",  # Missing type annotation for 'cls' in classmethod — unnecessary
+    "ANN401",  # Dynamically typed expressions (Any) — needed for some genomics APIs
+    "E501",    # Line too long — handled by Black formatter
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Test files don't need return type annotations
+"tests/**/*.py" = ["ANN"]
+"*/tests/**/*.py" = ["ANN"]
+# Migration files are auto-generated
+"**/migrations/*.py" = ["E", "F"]
+
+[tool.ruff.lint.isort]
+# Black-compatible import sorting
+known-first-party = ["genomeforge", "bayesacmg", "beacon_api", "annotation", "reclassification"]
+
+# =============================================================================
+# isort — import sorting (also configured via ruff, kept for compatibility)
+# =============================================================================
+[tool.isort]
+# Must use Black profile to avoid conflicts with ruff's isort rules
+profile = "black"
+line_length = 88
+known_first_party = ["genomeforge", "bayesacmg", "beacon_api", "annotation"]
+
+# =============================================================================
+# mypy — static type checker
+# =============================================================================
+[tool.mypy]
+# Python 3.12 strictly — do not downgrade
+python_version = "3.12"
+# Strict mode enables all optional error checks per §0.3 type annotation standard
+strict = true
+# Warn on unused ignores (keeps the codebase clean)
+warn_unused_ignores = true
+warn_return_any = true
+warn_unreachable = true
+# Show error codes in output for easier suppression targeting
+show_error_codes = true
+# Namespace packages (needed for our monorepo structure)
+namespace_packages = true
+explicit_package_bases = true
+
+# Per-module overrides for third-party libraries without type stubs
+[[tool.mypy.overrides]]
+module = [
+    "pymc.*",
+    "pytensor.*",
+    "weasyprint.*",
+    "ga4gh.vrs.*",
+    "phenopackets.*",
+    "celery.*",
+    "redis.*",
+]
+ignore_missing_imports = true
+
+# =============================================================================
+# pytest — test runner
+# =============================================================================
+[tool.pytest.ini_options]
+# All test directories across the monorepo
+testpaths = [
+    "bayesacmg/tests",
+    "beacon_api/tests",
+    "annotation/tests",
+    "reclassification/tests",
+    "reporting/tests",
+    "pgx/tests",
+    "prioritisation/tests",
+    "phenopackets_input/tests",
+    "multi_ancestry/tests",
+]
+# Test file discovery pattern
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+# asyncio mode for async test functions (Beacon API, annotation clients)
+asyncio_mode = "auto"
+# Coverage settings — must not drop below 90% per §0.3
+addopts = [
+    "--cov=.",
+    "--cov-report=html:htmlcov",
+    "--cov-report=xml:coverage.xml",
+    "--cov-report=term-missing",
+    "--cov-fail-under=90",
+    "-v",
+    "--tb=short",
+]
+# Markers for CI filtering
+markers = [
+    "slow: marks tests as slow (deselect with -m 'not slow')",
+    "integration: marks tests requiring external services",
+    "acmg: marks ACMG rule unit tests",
+    "beacon: marks Beacon API tests",
+    "chr22: marks chr22 test profile tests",
+]
+
+# =============================================================================
+# Coverage.py — coverage measurement
+# =============================================================================
+[tool.coverage.run]
+source = [
+    "bayesacmg/src",
+    "beacon_api",
+    "annotation",
+    "reclassification",
+    "reporting",
+    "pgx",
+    "prioritisation",
+    "phenopackets_input",
+    "multi_ancestry",
+]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+# Exclude boilerplate from coverage reporting
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

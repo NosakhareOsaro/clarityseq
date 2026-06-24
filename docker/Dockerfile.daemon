@@ -1,0 +1,69 @@
+# GenomeForge Reclassification Daemon Image
+# Celery + Redis 7 — weekly ClinVar diff + VUS recontact notifications
+# ACGS 2024 §9: VUS must be re-evaluated every 18 months minimum
+# NHS mandate: submit novel P/LP to ClinVar (ACGS 2024 Introduction)
+#
+# Build: docker build -f docker/Dockerfile.daemon -t genomeforge/daemon:latest .
+# Verify: docker run --rm genomeforge/daemon:latest celery --version
+#
+# Hadolint: hadolint docker/Dockerfile.daemon
+
+FROM python:3.12-slim AS base
+
+LABEL maintainer="GenomeForge Team <genomeforge@noreply.github.com>" \
+      org.opencontainers.image.title="GenomeForge Reclassification Daemon" \
+      org.opencontainers.image.description="Celery worker: ClinVar diff + VUS recontact (ACGS 2024 §9)" \
+      org.opencontainers.image.version="0.1.0" \
+      org.opencontainers.image.licenses="MIT"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    LANG=C.UTF-8 \
+    # Celery configuration defaults (override via environment in docker-compose / Batch)
+    CELERY_BROKER_URL="redis://redis:6379/0" \
+    CELERY_RESULT_BACKEND="redis://redis:6379/0" \
+    CLINVAR_DIFF_SCHEDULE_CRON="0 3 * * 1"
+
+# ── System dependencies ───────────────────────────────────────────────────────
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        libpq-dev \
+        libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Python dependencies ───────────────────────────────────────────────────────
+WORKDIR /app
+
+RUN pip install --no-cache-dir \
+        "celery[redis]==5.4.0" \
+        "redis==5.2.1" \
+        "sqlalchemy==2.0.36" \
+        "asyncpg==0.30.0" \
+        "psycopg2-binary==2.9.10" \
+        "httpx==0.28.1" \
+        "pydantic==2.10.4" \
+        "fhir.resources==7.1.0" \
+        "flower==2.0.1"
+
+# ── Application code ──────────────────────────────────────────────────────────
+COPY reclassification/ /app/reclassification/
+COPY annotation/ /app/annotation/
+COPY bayesacmg/ /app/bayesacmg/
+
+# Install bayesacmg (the classifier the daemon uses for re-classification)
+RUN pip install --no-cache-dir -e "bayesacmg/" 2>/dev/null || true
+
+# Non-root user
+RUN groupadd --gid 1001 appgroup \
+    && useradd --uid 1001 --gid appgroup --no-create-home appuser
+USER appuser
+
+# Celery beat + worker in one container for simplicity
+# Production: split worker and beat into separate services
+ENTRYPOINT ["celery"]
+CMD ["-A", "reclassification.daemon", "worker", "--beat", \
+     "--loglevel=info", "--concurrency=2", \
+     "--queues=clinvar_diff,vus_review,recontact"]

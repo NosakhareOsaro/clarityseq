@@ -1,0 +1,156 @@
+cff-version: 1.2.0
+message: >-
+  If you use GenomeForge in your research, please cite it using the
+  metadata in this file. For the underlying methods, also cite the
+  relevant tools (DRAGMAP, GATK, DeepVariant, VEP, AlphaMissense,
+  BayesACMG) as documented in the JOSS paper (joss_paper/paper.md).
+
+title: >-
+  GenomeForge: a DRAGEN-GATK pangenome-aware clinical WGS platform with
+  Bayesian ACMG classification (ACGS 2024 v1.2), automated ClinVar
+  reclassification monitoring, and GA4GH Beacon v2.1.1 federation
+
+version: "0.1.0"
+date-released: "2026-06-23"
+
+abstract: >-
+  GenomeForge is a production-grade, research-novel whole-genome sequencing
+  (WGS) clinical variant interpretation platform implementing seven distinct
+  novel contributions not present in any existing public pipeline. It combines
+  DRAGEN-GATK primary alignment (DRAGMAP v1.3.0 + GATK4 HaplotypeCaller
+  4.6.0.0 DRAGEN-GATK mode), DeepVariant v1.8.0 parallel ensemble calling,
+  HPRC pangenome alignment (vg giraffe), and T2T-CHM13 v2.0 liftover with a
+  fully Bayesian ACMG/AMP classification engine (BayesACMG) implementing all
+  28 ACMG rules, ClinGen SVI 2024 updates, VCEP overrides, and AlphaMissense
+  as the primary PP3/BP4 evidence. The platform includes an automated ClinVar
+  reclassification daemon (Celery + FHIR R4 Genomics Reporting IG v3.0.0), a
+  GA4GH Beacon v2.1.1 federation API with VRS v2.0 identifiers and GA4GH
+  Passports, and pharmacogenomics reporting via Cyrius CYP2D6 + PharmVar +
+  CPIC. Designed for ACGS 2024 v1.2 compliance and NHS England Genomic
+  Medicine Service accreditation.
+
+license: MIT
+
+url: "https://github.com/genomeforge/genome-forge"
+repository-code: "https://github.com/genomeforge/genome-forge"
+repository-artifact: "https://github.com/genomeforge/genome-forge/releases"
+
+authors:
+  - family-names: "Nosakhare"
+    given-names: "Osaronos"
+    email: "osaronosakhare@gmail.com"
+    orcid: ""
+
+contact:
+  - family-names: "Nosakhare"
+    given-names: "Osaronos"
+    email: "osaronosakhare@gmail.com"
+
+keywords:
+  - wgs
+  - whole-genome-sequencing
+  - dragen-gatk
+  - dragmap
+  - pangenome
+  - hprc
+  - vg-giraffe
+  - t2t-chm13
+  - bayesian-acmg
+  - acmg-amp
+  - acgs-2024
+  - clingen-svi
+  - alphamissense
+  - deepvariant
+  - ensemble-calling
+  - fhir
+  - beacon
+  - ga4gh-beacon-v2
+  - vrs
+  - vrs-v2
+  - pharmacogenomics
+  - cyp2d6
+  - cpic
+  - clinvar-reclassification
+  - nhs-genomics
+  - gnomad-v4-1
+  - vep-v111
+  - mane-select
+  - phenopackets-v2
+  - expansionhunter
+
+# Key references that GenomeForge implements
+references:
+  - type: article
+    title: "Standards and guidelines for the interpretation of sequence variants: a joint consensus recommendation of the American College of Medical Genetics and Genomics and the Association for Molecular Pathology"
+    authors:
+      - family-names: "Richards"
+        given-names: "Sue"
+    year: 2015
+    journal: "Genetics in Medicine"
+    doi: "10.1038/gim.2015.30"
+    notes: "PMID:25741868 — primary ACMG/AMP 2015 framework"
+
+  - type: article
+    title: "Accurate pathogenicity prediction of missense variants with AlphaMissense"
+    authors:
+      - family-names: "Cheng"
+        given-names: "Jun"
+    year: 2023
+    journal: "Science"
+    doi: "10.1126/science.adg7492"
+    notes: "PMID:37733863 — AlphaMissense; ClinGen SVI approved for PP3/BP4"
+
+  - type: article
+    title: "ACGS Best Practice Guidelines for Variant Classification in Rare Disease 2024 v1.2"
+    authors:
+      - family-names: "Durkie"
+        given-names: "Miranda"
+    year: 2024
+    journal: "Association for Clinical Genomic Science"
+    notes: "ACGS 2024 v1.2 — primary clinical guidelines implemented"
+
+  - type: article
+    title: "gnomAD v4.1: improved variant filtering and expanded population coverage"
+    authors:
+      - family-names: "Karczewski"
+        given-names: "Konrad J"
+    year: 2024
+    journal: "Nature"
+    notes: "gnomAD v4.1 (April 2024): 807,162 individuals including 76,215 genomes"
+
+  - type: article
+    title: "Genome Reference Consortium Human Build 38 patch release 14"
+    notes: "GRCh38/hg38 — primary reference genome"
+
+  - type: software
+    title: "DRAGMAP: the DRAGEN mapper"
+    version: "1.3.0"
+    url: "https://github.com/Illumina/DRAGMAP"
+    notes: "DRAGEN-GATK Best Practice primary aligner; replaces BWA-MEM2"
+
+  - type: article
+    title: "A universal SNP and small-indel variant caller using deep neural networks"
+    authors:
+      - family-names: "Poplin"
+        given-names: "Ryan"
+    year: 2018
+    journal: "Nature Biotechnology"
+    doi: "10.1038/nbt.4235"
+    notes: "DeepVariant v1.8.0 — parallel variant calling"
+
+  - type: article
+    title: "Ensembl Variant Effect Predictor"
+    authors:
+      - family-names: "McLaren"
+        given-names: "William"
+    year: 2016
+    journal: "Genome Biology"
+    doi: "10.1186/s13059-016-0974-4"
+    notes: "VEP v111 with MANE Select transcript annotation"
+
+  - type: article
+    title: "Beacon v2 and Beacon networks: a 'lingua franca' for federated data discovery in biomedical genomics"
+    year: 2022
+    journal: "Human Mutation"
+    doi: "10.1002/humu.24369"
+    notes: "GA4GH Beacon v2.1.1 federation API"

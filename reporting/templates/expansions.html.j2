@@ -1,0 +1,71 @@
+{# expansions.html.j2 — Repeat expansion table
+   Shows STR/tandem repeat expansion results from ExpansionHunter.
+   Includes locus, allele sizes, pathogenic thresholds, and OMIM IDs.
+   References:
+     Dolzhenko et al. 2019 Genome Research PMID:30940149 (ExpansionHunter)
+     ACGS 2024 v1.2 §5 (variant classification)
+#}
+
+<h2>Repeat Expansion Analysis</h2>
+
+{% if expansion_data and expansion_data.get("expansions") %}
+<table class="variant-table">
+  <thead>
+    <tr>
+      <th>Locus</th>
+      <th>Gene</th>
+      <th>Repeat Unit</th>
+      <th>Allele 1<br>(repeat count)</th>
+      <th>Allele 2<br>(repeat count)</th>
+      <th>Pathogenic<br>Threshold</th>
+      <th>Classification</th>
+      <th>Associated Disease</th>
+      <th>OMIM</th>
+      <th>Inheritance</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for exp in expansion_data.expansions %}
+    <tr>
+      <td><strong>{{ exp.get("locus", "") }}</strong></td>
+      <td>{{ exp.get("gene", "") }}</td>
+      <td><code>{{ exp.get("repeat_unit", "") }}</code></td>
+      <td>{{ exp.get("allele1", "N/A") }}</td>
+      <td>{{ exp.get("allele2", "N/A") }}</td>
+      <td>
+        {% if exp.get("path_threshold") %}
+        ≥ {{ exp.path_threshold }}
+        {% else %}
+        N/A
+        {% endif %}
+      </td>
+      <td>
+        {% set cls = exp.get("classification", "VUS") %}
+        {% if cls == "Pathogenic" %}
+        <span class="badge badge-pathogenic">Pathogenic</span>
+        {% elif cls == "Likely_Pathogenic" %}
+        <span class="badge badge-lp">Likely Pathogenic</span>
+        {% elif cls == "Normal" %}
+        <span class="badge badge-benign">Normal</span>
+        {% else %}
+        <span class="badge badge-vus">{{ cls }}</span>
+        {% endif %}
+      </td>
+      <td>{{ exp.get("disease", "") }}</td>
+      <td>
+        {% if exp.get("omim") %}
+        <a href="https://www.omim.org/entry/{{ exp.omim }}">OMIM:{{ exp.omim }}</a>
+        {% else %}—{% endif %}
+      </td>
+      <td>{{ exp.get("inheritance", "") }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p style="font-size: 9pt; color: #768692;">
+  Repeat expansion genotyping by ExpansionHunter (Dolzhenko et al. 2019 PMID:30940149).
+  Pathogenic thresholds from ClinGen/ACMG repeat expansion disease thresholds.
+</p>
+{% else %}
+<p class="no-variants">Repeat expansion data not available or no expansions detected above reporting thresholds.</p>
+{% endif %}

@@ -1,0 +1,100 @@
+# GenomeForge Pangenome CI — Nightly
+#
+# Runs nightly at 02:00 UTC to validate the pangenome arm.
+# Acceptance criterion: HPRC pangenome SNP sensitivity ≥ GRCh38 SNP sensitivity.
+#
+# Resources: 32 CPUs, 256 GB RAM (pangenome arm minimum)
+# Cache: HPRC chr22 pangenome graph (7-day TTL)
+# Reference: Liao et al. 2023 Nature 617:312 PMID:37165242
+
+name: Pangenome CI (Nightly)
+
+on:
+  schedule:
+    - cron: "0 2 * * *"   # Nightly at 02:00 UTC
+  workflow_dispatch:       # Allow manual trigger
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  pangenome-test:
+    name: Pangenome benchmark (HPRC vs GRCh38 on HG001 chr22)
+    # Self-hosted runner with ≥ 32 CPUs and 256 GB RAM required
+    runs-on: [self-hosted, pangenome]
+    timeout-minutes: 240   # Pangenome alignment can take 3-4 hours
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Nextflow)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install Nextflow
+        run: |
+          curl -s https://get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+
+      - name: Cache HPRC chr22 pangenome graph (7-day TTL)
+        # HPRC v1.1 minigraph-cactus chr22 graph is ~1 GB
+        id: cache-hprc
+        uses: actions/cache@v4
+        with:
+          path: /tmp/hprc/
+          key: hprc-v1.1-chr22-${{ hashFiles('conf/base.config') }}
+          restore-keys: hprc-v1.1-chr22-
+
+      - name: Download HPRC chr22 graph (if not cached)
+        if: steps.cache-hprc.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p /tmp/hprc
+          aws s3 cp s3://human-pangenomics/pangenomes/freeze/freeze1/minigraph-cactus/hprc-v1.1-mc-grch38-chr22.gbz /tmp/hprc/ || \
+            wget -q "https://s3-us-west-2.amazonaws.com/human-pangenomics/pangenomes/freeze/freeze1/minigraph-cactus/hprc-v1.1-mc-grch38-chr22.gbz" \
+              -O /tmp/hprc/hprc-v1.1-mc-grch38-chr22.gbz
+
+      - name: Run GRCh38 arm (baseline)
+        run: |
+          nextflow run pipelines/wgs_grch38.nf \
+            -profile test,docker \
+            --outdir /tmp/results/grch38 \
+            -resume
+
+      - name: Run pangenome arm
+        run: |
+          nextflow run pipelines/wgs_pangenome.nf \
+            -profile pangenome,docker \
+            --pangenome_graph /tmp/hprc/hprc-v1.1-mc-grch38-chr22.gbz \
+            --outdir /tmp/results/pangenome \
+            -resume
+
+      - name: Compare pangenome vs GRCh38 sensitivity
+        # ACCEPTANCE: pangenome SNP sensitivity ≥ GRCh38 SNP sensitivity
+        run: |
+          python benchmark/parse_results.py \
+            --grch38 /tmp/results/grch38/benchmark/ \
+            --pangenome /tmp/results/pangenome/benchmark/ \
+            --assert-pangenome-not-worse-than-grch38
+
+      - name: Upload pangenome benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pangenome-nightly-${{ github.run_id }}
+          path: |
+            /tmp/results/grch38/benchmark/
+            /tmp/results/pangenome/benchmark/
+          retention-days: 30
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          # Slack notification on pangenome CI failure
+          curl -s -X POST "$SLACK_WEBHOOK_URL" \
+            -H 'Content-type: application/json' \
+            --data "{\"text\":\"⚠️ GenomeForge pangenome nightly CI FAILED. Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

@@ -1,0 +1,147 @@
+{# variants.html.j2 — Nuclear variant table with all ACGS 2024 columns
+   Columns: Gene | MANE Select Transcript | HGVSc | HGVSp |
+            ACMG Class (ACGS 2024) | P(Path) [95% HDI] |
+            gnomAD v4.1 AF | AlphaMissense Score | ClinVar |
+            Inheritance | Review Date
+   ACGS 2024 v1.2 compliance:
+     - MANE Select transcript required (Morales 2022 PMID:35356062)
+     - VUS review date shown (ACGS 2024 §9)
+     - Novel P/LP ClinVar submission flag shown
+#}
+
+<h2>Nuclear Variant Table (ACGS {{ config.acgs_version }})</h2>
+
+{% if variants %}
+<table class="variant-table">
+  <thead>
+    <tr>
+      <th>Gene</th>
+      <th>MANE Select Transcript</th>
+      <th>HGVSc</th>
+      <th>HGVSp</th>
+      <th>ACMG Class<br>(ACGS {{ config.acgs_version }})</th>
+      <th>P(Path)<br>[95% HDI]</th>
+      <th>gnomAD v{{ config.gnomad_version }} AF</th>
+      <th>AlphaMissense<br>Score</th>
+      <th>ClinVar</th>
+      <th>Inheritance</th>
+      <th>Review Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in variants %}
+    <tr {% if v.pending_clinvar_submission %}class="pending-clinvar-row"{% endif %}>
+      {# Gene symbol #}
+      <td><strong>{{ v.gene_symbol }}</strong></td>
+
+      {# MANE Select transcript — required per ACGS 2024 v1.2 §5 Note 1
+         and Morales et al. 2022 PMID:35356062 #}
+      <td>
+        {{ v.mane_select_transcript }}
+        {% if "NM_" in v.mane_select_transcript %}
+        <br><small style="color: #768692;">MANE Select</small>
+        {% endif %}
+      </td>
+
+      {# HGVSc notation #}
+      <td><code>{{ v.hgvsc }}</code></td>
+
+      {# HGVSp notation #}
+      <td><code>{{ v.hgvsp }}</code></td>
+
+      {# ACMG classification with badge #}
+      <td>
+        {% if v.acmg_class == "Pathogenic" %}
+        <span class="badge badge-pathogenic">Pathogenic</span>
+        {% elif v.acmg_class == "Likely_Pathogenic" %}
+        <span class="badge badge-lp">Likely Pathogenic</span>
+        {% elif v.acmg_class == "VUS" %}
+        <span class="badge badge-vus">VUS</span>
+        {% elif v.acmg_class == "Likely_Benign" %}
+        <span class="badge badge-lb">Likely Benign</span>
+        {% elif v.acmg_class == "Benign" %}
+        <span class="badge badge-benign">Benign</span>
+        {% else %}
+        <span class="badge">{{ v.acmg_class }}</span>
+        {% endif %}
+        {% if v.pending_clinvar_submission %}
+        <br><small class="pending-clinvar">⚑ Pending ClinVar submission</small>
+        {% endif %}
+        {% if v.rules_applied %}
+        <br><small style="color: #768692; font-size: 7pt;">{{ v.rules_applied | join(", ") }}</small>
+        {% endif %}
+      </td>
+
+      {# Bayesian posterior P(pathogenic) with 95% HDI #}
+      <td>
+        {% if v.posterior_p is not none %}
+        {{ "%.3f" | format(v.posterior_p) }}
+        {% if v.hdi_lower is not none and v.hdi_upper is not none %}
+        <br><small style="color: #768692;">[{{ "%.3f" | format(v.hdi_lower) }}–{{ "%.3f" | format(v.hdi_upper) }}]</small>
+        {% endif %}
+        {% else %}
+        <span style="color: #768692;">N/A</span>
+        {% endif %}
+      </td>
+
+      {# gnomAD v4.1 allele frequency #}
+      <td>
+        {% if v.gnomad_af is not none %}
+        {{ "%.2e" | format(v.gnomad_af) }}
+        {% else %}
+        <span style="color: #768692;">absent</span>
+        {% endif %}
+      </td>
+
+      {# AlphaMissense score #}
+      <td>
+        {% if v.alphamissense_score is not none %}
+        {{ "%.3f" | format(v.alphamissense_score) }}
+        {% if v.alphamissense_score >= 0.564 %}
+        <span style="color: var(--nhs-red); font-size: 7pt;">&nbsp;↑PP3</span>
+        {% elif v.alphamissense_score <= 0.340 %}
+        <span style="color: var(--nhs-green); font-size: 7pt;">&nbsp;↓BP4</span>
+        {% endif %}
+        {% else %}
+        <span style="color: #768692;">N/A</span>
+        {% endif %}
+      </td>
+
+      {# ClinVar #}
+      <td>
+        {% if v.clinvar_id %}
+        <a href="https://www.ncbi.nlm.nih.gov/clinvar/variation/{{ v.clinvar_id }}">
+          {{ v.clinvar_id }}
+        </a>
+        {% if v.clinvar_class %}
+        <br><small style="color: #768692;">{{ v.clinvar_class }}</small>
+        {% endif %}
+        {% else %}
+        <span style="color: #768692;">—</span>
+        {% if v.is_novel %}
+        <br><small style="color: var(--nhs-orange); font-size: 7pt;">Novel variant</small>
+        {% endif %}
+        {% endif %}
+      </td>
+
+      {# Inheritance mode #}
+      <td>{{ v.inheritance_mode or "—" }}</td>
+
+      {# Review date (ACGS 2024 §9 — VUS review within 2 years) #}
+      <td>
+        {% if v.review_date %}
+        <span class="vus-review">{{ v.review_date }}</span>
+        {% if v.acmg_class == "VUS" %}
+        <br><small style="color: #768692; font-size: 7pt;">ACGS 2024 §9</small>
+        {% endif %}
+        {% else %}
+        <span style="color: #768692;">—</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="no-variants">No nuclear variants reported at or above the reporting threshold.</p>
+{% endif %}

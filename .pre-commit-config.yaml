@@ -1,0 +1,145 @@
+# =============================================================================
+# GenomeForge — pre-commit hook configuration
+# =============================================================================
+# Enforces code quality at commit time.
+# Install hooks: pre-commit install
+# Run manually: pre-commit run --all-files
+# Update hooks: pre-commit autoupdate
+#
+# Hook order matters — formatters run before linters.
+# =============================================================================
+
+# Minimum pre-commit version required
+minimum_pre_commit_version: "3.7.0"
+
+default_language_version:
+  python: python3.12
+
+repos:
+  # ===========================================================================
+  # pre-commit-hooks — basic file hygiene
+  # ===========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      # Remove trailing whitespace from all text files
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+
+      # Ensure every file ends with a newline (POSIX standard)
+      - id: end-of-file-fixer
+
+      # Validate YAML syntax — catches broken nextflow config and GitHub Actions
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+        # Exclude nextflow configs — they use Groovy, not pure YAML
+        exclude: "nextflow\\.config|conf/.*\\.config"
+
+      # Prevent accidentally committing large files (e.g., BAM, VCF, FASTQ)
+      # 500 kB limit — genomic data files must go to S3, not git
+      - id: check-added-large-files
+        args: [--maxkb=500]
+
+      # Prevent case-sensitivity filename bugs across macOS/Linux
+      # Critical for pipeline modules where filenames must match exactly
+      - id: check-case-conflict
+
+      # Detect merge conflict markers left in files
+      - id: check-merge-conflict
+
+      # Validate JSON syntax (fixtures, phenopackets examples)
+      - id: check-json
+
+      # Prevent committing to main/master directly
+      - id: no-commit-to-branch
+        args: [--branch, main, --branch, master]
+
+      # Check Python syntax without running the code
+      - id: check-ast
+
+      # Prevent committing debugging breakpoints
+      - id: debug-statements
+
+  # ===========================================================================
+  # Black — Python code formatter
+  # Runs BEFORE ruff so ruff sees already-formatted code
+  # ===========================================================================
+  - repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+      - id: black
+        language_version: python3.12
+        # Black config is in pyproject.toml [tool.black]
+
+  # ===========================================================================
+  # Ruff — fast Python linter (E, F, I, B, UP, ANN rules)
+  # Configured in pyproject.toml [tool.ruff]
+  # ===========================================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.4
+    hooks:
+      # Run ruff linter
+      - id: ruff
+        args: [--fix]
+      # Run ruff as formatter (in addition to black, for import sorting)
+      - id: ruff-format
+
+  # ===========================================================================
+  # mypy — static type checker (strict mode, Python 3.12)
+  # Configured in pyproject.toml [tool.mypy]
+  # ===========================================================================
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy
+        language_version: python3.12
+        additional_dependencies:
+          - "pydantic==2.7.1"
+          - "sqlalchemy[mypy]==2.0.30"
+          - "fastapi==0.111.0"
+          - "types-redis"
+          - "types-requests"
+          - "types-PyYAML"
+        # Only type-check the main Python packages, not scripts
+        files: ^(bayesacmg|beacon_api|annotation|reclassification|reporting|pgx|prioritisation|phenopackets_input|multi_ancestry)/
+
+  # ===========================================================================
+  # Hadolint — Dockerfile linter
+  # Enforces best practices in all Dockerfiles (Ubuntu 24.04 base)
+  # ===========================================================================
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint-docker
+        # DL3008: Pin apt-get versions — we do this in all Dockerfiles
+        # DL3009: Delete apt cache — handled in each RUN instruction
+        args:
+          - --ignore=DL3008
+          - --ignore=DL3009
+          - --failure-threshold=warning
+
+  # ===========================================================================
+  # detect-secrets — prevent accidental credential commits
+  # Scans for API keys, passwords, JWT secrets, AWS credentials
+  # Critical given this pipeline handles clinical patient data
+  # ===========================================================================
+  - repo: https://github.com/Yelp/detect-secrets
+    rev: v1.4.0
+    hooks:
+      - id: detect-secrets
+        args:
+          - --baseline
+          - .secrets.baseline
+        # Exclude example files that contain placeholder values
+        exclude: .env.example
+
+  # ===========================================================================
+  # Terraform — validate Terraform configuration syntax
+  # ===========================================================================
+  - repo: https://github.com/antonbabenko/pre-commit-terraform
+    rev: v1.90.0
+    hooks:
+      - id: terraform_fmt
+        args: [--args=-recursive]
+      - id: terraform_validate
+        files: ^terraform/

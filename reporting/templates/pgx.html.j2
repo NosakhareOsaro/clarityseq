@@ -1,0 +1,104 @@
+{# pgx.html.j2 — CYP2D6 pharmacogenomics section
+   Reports CYP2D6 diplotype, activity score, metaboliser phenotype,
+   and CPIC drug dosing recommendations.
+   References:
+     CPIC CYP2D6 guidelines: https://cpicpgx.org/
+     Aliev et al. 2022 NPJ Genomic Medicine PMID:35264608 (Cyrius)
+     Crews et al. 2014 PMID:24458010 (codeine guideline)
+     ACGS 2024 v1.2 §5 (PGx context in WGS reporting)
+#}
+
+<h2>Pharmacogenomics (CYP2D6)</h2>
+
+{% if pgx_data and pgx_data.get("cyp2d6") %}
+{% set cyp = pgx_data.cyp2d6 %}
+
+<div class="summary-box">
+  <p>
+    <strong>CYP2D6 Diplotype:</strong> <code>{{ cyp.get("diplotype", "N/A") }}</code> |
+    <strong>Activity Score:</strong> {{ cyp.get("activity_score", "N/A") }} |
+    <strong>Metaboliser Phenotype:</strong>
+    {% set pheno = cyp.get("metaboliser_phenotype", "") %}
+    {% if pheno == "PM" %}
+    <span style="color: var(--nhs-red); font-weight: bold;">PM — Poor Metaboliser</span>
+    {% elif pheno == "IM" %}
+    <span style="color: var(--nhs-orange); font-weight: bold;">IM — Intermediate Metaboliser</span>
+    {% elif pheno == "NM" %}
+    <span style="color: var(--nhs-green); font-weight: bold;">NM — Normal Metaboliser</span>
+    {% elif pheno == "UM" %}
+    <span style="color: var(--nhs-red); font-weight: bold;">UM — Ultrarapid Metaboliser</span>
+    {% else %}
+    {{ pheno }}
+    {% endif %}
+  </p>
+</div>
+
+<h3>CYP2D6 Activity Score and Phenotype Mapping</h3>
+<table class="patient-info-table">
+  <tr>
+    <th>Diplotype</th>
+    <td><code>{{ cyp.get("diplotype", "N/A") }}</code></td>
+    <th>Star Alleles</th>
+    <td>{{ cyp.get("star_alleles", []) | join(", ") }}</td>
+  </tr>
+  <tr>
+    <th>Activity Score</th>
+    <td>{{ cyp.get("activity_score", "N/A") }}</td>
+    <th>Phenotype</th>
+    <td>{{ cyp.get("metaboliser_phenotype", "N/A") }}
+      (CPIC 2022: ≥2.25=UM, 1.25–2.25=NM, &gt;0–1.25=IM, 0=PM)</td>
+  </tr>
+  <tr>
+    <th>Genotyping Method</th>
+    <td colspan="3">Cyrius (Aliev et al. 2022 NPJ Genomic Medicine PMID:35264608)</td>
+  </tr>
+</table>
+
+<h3>CPIC Drug Dosing Recommendations</h3>
+{% if cyp.get("recommendations") %}
+<table class="variant-table">
+  <thead>
+    <tr>
+      <th>Drug</th>
+      <th>CPIC Level</th>
+      <th>Recommendation</th>
+      <th>Clinical Implications</th>
+      <th>Guideline</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for rec in cyp.recommendations %}
+    <tr>
+      <td><strong>{{ rec.get("drug_name", "") | title }}</strong></td>
+      <td>
+        <span class="badge" style="background: #E3F2FD; color: var(--nhs-blue);">
+          Level {{ rec.get("cpic_level", "A") }}
+        </span>
+      </td>
+      <td>{{ rec.get("recommendation", "") }}</td>
+      <td>{{ rec.get("implications", "") }}</td>
+      <td>
+        {% if rec.get("guideline_url") %}
+        <a href="{{ rec.guideline_url }}" style="font-size: 8pt;">CPIC Guideline</a>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>{{ cyp.get("cpic_recommendation", "Consult CPIC guidelines at https://cpicpgx.org/") }}</p>
+{% endif %}
+
+<p style="font-size: 9pt; color: #768692;">
+  CYP2D6 star allele definitions from PharmVar (https://www.pharmvar.org/).
+  CPIC dosing recommendations based on CPIC CYP2D6 guidelines (cpicpgx.org).
+  Metaboliser phenotype classification uses CPIC 2022 activity score thresholds.
+  <strong>PM patients:</strong> avoid codeine and tramadol (CPIC Level A; PMID:24458010).
+  <strong>UM patients:</strong> codeine and tramadol risk serious toxicity (CPIC Level A).
+</p>
+
+{% else %}
+<p class="no-variants">CYP2D6 pharmacogenomics data not available.
+Run Cyrius on the BAM file to generate CYP2D6 diplotype.</p>
+{% endif %}

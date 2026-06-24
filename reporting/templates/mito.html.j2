@@ -1,0 +1,126 @@
+{# mito.html.j2 — ACGS 2024 §6 mitochondrial section
+   Per ACGS 2024 v1.2 §6: haplogroup is reported FIRST before any
+   pathogenicity assessment.  Haplogroup-defining variants are classified
+   Benign and not included in the pathogenicity table.
+   References:
+     ACGS 2024 v1.2 §6 (mitochondrial WGS guidelines)
+     Haplogrep3: Weissensteiner et al. 2021
+     PhyloTree Build 17: van Oven 2009
+     MITOMAP: https://www.mitomap.org
+#}
+
+<h2>Mitochondrial Genome (ACGS {{ config.acgs_version }} §6)</h2>
+
+<div class="summary-box">
+  <p><strong>Important:</strong>
+  Per ACGS 2024 v1.2 §6, the mitochondrial haplogroup is reported first.
+  Haplogroup-defining variants are classified Benign and excluded from the
+  pathogenicity table below.  Heteroplasmy levels are reported for all variants.
+  The standard BA1 allele frequency threshold (5%) does <em>not</em> apply to
+  mitochondrial variants.
+  </p>
+</div>
+
+{# Haplogroup — MUST appear first per ACGS 2024 §6 #}
+{% if expansion_data is defined and expansion_data.get("haplogroup") %}
+<h3>Mitochondrial Haplogroup (Haplogrep3)</h3>
+<table class="patient-info-table">
+  <tr>
+    <th>Haplogroup</th>
+    <td><strong>{{ expansion_data.haplogroup }}</strong></td>
+    <th>Quality Score</th>
+    <td>{{ expansion_data.get("haplogroup_quality", "N/A") }}</td>
+  </tr>
+  <tr>
+    <th>Reference</th>
+    <td colspan="3">
+      Haplogrep3 (Weissensteiner et al. 2021) / PhyloTree Build 17 (van Oven 2009)
+    </td>
+  </tr>
+</table>
+{% else %}
+<h3>Mitochondrial Haplogroup</h3>
+<p class="no-variants">Haplogroup data not available. Run Haplogrep3 on the mitogenome BAM.</p>
+{% endif %}
+
+{# Mitochondrial variant table #}
+<h3>Mitochondrial Variants</h3>
+{% if mito_variants %}
+<table class="variant-table">
+  <thead>
+    <tr>
+      <th>Gene / Region</th>
+      <th>Position (mtDNA)</th>
+      <th>Ref</th>
+      <th>Alt</th>
+      <th>Heteroplasmy (%)</th>
+      <th>ACMG Class<br>(ACGS {{ config.acgs_version }} §6)</th>
+      <th>MITOMAP Status</th>
+      <th>gnomAD v3.1 AF<br>(Mito-specific)</th>
+      <th>HGVSm</th>
+      <th>Review Date</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for v in mito_variants %}
+    <tr>
+      <td><strong>{{ v.gene_symbol }}</strong></td>
+      <td>m.{{ v.extra.get("mtdna_pos", "") }}</td>
+      <td>{{ v.extra.get("ref", "") }}</td>
+      <td>{{ v.extra.get("alt", "") }}</td>
+      <td>
+        {% set hl = v.extra.get("heteroplasmy_level") %}
+        {% if hl is not none %}
+        <strong>{{ "%.1f" | format(hl * 100) }}%</strong>
+        {% if hl > 0.60 %}
+        <span style="color: var(--nhs-red);"> High</span>
+        {% elif hl >= 0.20 %}
+        <span style="color: var(--nhs-orange);"> Moderate</span>
+        {% else %}
+        <span style="color: #768692;"> Low</span>
+        {% endif %}
+        {% else %}
+        <span style="color: #768692;">N/A</span>
+        {% endif %}
+      </td>
+      <td>
+        {% if v.acmg_class == "Pathogenic" %}
+        <span class="badge badge-pathogenic">Pathogenic</span>
+        {% elif v.acmg_class == "Likely_Pathogenic" %}
+        <span class="badge badge-lp">Likely Pathogenic</span>
+        {% elif v.acmg_class == "VUS" %}
+        <span class="badge badge-vus">VUS</span>
+        {% elif v.acmg_class == "Benign" %}
+        <span class="badge badge-benign">Benign</span>
+        {% else %}
+        <span class="badge">{{ v.acmg_class }}</span>
+        {% endif %}
+      </td>
+      <td>{{ v.extra.get("mitomap_status", "—") }}</td>
+      <td>
+        {% if v.gnomad_af is not none %}
+        {{ "%.2e" | format(v.gnomad_af) }}
+        <br><small style="color: #768692;">gnomAD v3.1 mito</small>
+        {% else %}
+        <span style="color: #768692;">absent</span>
+        {% endif %}
+      </td>
+      <td><code>{{ v.hgvsc }}</code></td>
+      <td>
+        {% if v.review_date %}
+        <span class="vus-review">{{ v.review_date }}</span>
+        {% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p style="font-size: 9pt; color: #768692;">
+  Note: Standard nuclear BA1 allele frequency threshold (5%) does not apply
+  to mitochondrial variants (ACGS 2024 §6). Haplogroup-specific frequency
+  data from MITOMAP used for benign classification. Heteroplasmy levels
+  categorised per ACGS 2024 §6: &gt;60% High, 20–60% Moderate, &lt;20% Low.
+</p>
+{% else %}
+<p class="no-variants">No mitochondrial variants reported at or above the reporting threshold.</p>
+{% endif %}

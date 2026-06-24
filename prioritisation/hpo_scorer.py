@@ -1,0 +1,226 @@
+"""
+prioritisation.hpo_scorer
+==========================
+HPO phenotype scoring of candidate genes against patient HPO terms.
+
+Uses phenotypic similarity between the patient's HPO terms and gene-disease
+associations from HPO annotations (phenotype_to_genes.txt).
+
+Semantic similarity algorithms:
+    - Resnik similarity: based on information content of lowest common ancestor.
+    - Jaccard index: simple set overlap between patient terms and gene terms.
+    - BMA (Best Match Average): average of best-matching pairs.
+
+HPO gene annotations from:
+    https://hpo.jax.org/app/data/annotations
+    phenotype_to_genes.txt (updated monthly).
+
+References:
+    Köhler et al. 2021 Nucleic Acids Research PMID:33264411 (HPO).
+    Robinson et al. 2023 Nature Genetics PMID:37604970 (Exomiser HPO scoring).
+    Resnik 1995 — information-content based semantic similarity.
+"""
+
+from __future__ import annotations
+
+import logging
+import math
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Data models
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class GeneHPOScore:
+    """HPO phenotypic similarity score for a gene.
+
+    Attributes:
+        gene_symbol: HGNC gene symbol.
+        entrez_id: NCBI Entrez gene ID.
+        score: Phenotypic similarity score (0–1; higher = more similar).
+        method: Scoring method used (``"jaccard"``, ``"bma_resnik"``).
+        matched_terms: HPO terms shared between patient and gene.
+        patient_terms: HPO terms provided by the patient.
+        gene_terms: HPO terms associated with this gene.
+    """
+
+    gene_symbol: str
+    entrez_id: str
+    score: float
+    method: str
+    matched_terms: list[str] = field(default_factory=list)
+    patient_terms: list[str] = field(default_factory=list)
+    gene_terms: list[str] = field(default_factory=list)
+
+
+# ---------------------------------------------------------------------------
+# HPO annotation loader
+# ---------------------------------------------------------------------------
+
+
+def load_hpo_gene_annotations(
+    annotations_path: Path,
+) -> dict[str, set[str]]:
+    """Load HPO gene-to-term annotations from phenotype_to_genes.txt.
+
+    Args:
+        annotations_path: Path to HPO's phenotype_to_genes.txt file.
+            Format: HPO_ID\\tHPO_LABEL\\tENTREZ_ID\\tENTREZ_SYMBOL
+
+    Returns:
+        Dict mapping gene symbol (uppercase) → set of HPO term IDs.
+
+    Raises:
+        FileNotFoundError: If annotations_path does not exist.
+    """
+    if not annotations_path.exists():
+        raise FileNotFoundError(
+            f"HPO annotations not found: {annotations_path}. "
+            "Download from https://hpo.jax.org/app/data/annotations"
+        )
+
+    gene_terms: dict[str, set[str]] = {}
+
+    with annotations_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if len(parts) < 4:
+                continue
+            hpo_id = parts[0]
+            gene_symbol = parts[3].upper()
+            if gene_symbol not in gene_terms:
+                gene_terms[gene_symbol] = set()
+            gene_terms[gene_symbol].add(hpo_id)
+
+    logger.info(
+        "Loaded HPO annotations: %d genes from %s",
+        len(gene_terms),
+        annotations_path,
+    )
+    return gene_terms
+
+
+# ---------------------------------------------------------------------------
+# Scoring functions
+# ---------------------------------------------------------------------------
+
+
+def jaccard_score(
+    patient_terms: set[str],
+    gene_terms: set[str],
+) -> float:
+    """Compute Jaccard index between patient and gene HPO term sets.
+
+    Jaccard index = |intersection| / |union|.
+    Simple and fast; does not account for HPO term hierarchy.
+
+    Args:
+        patient_terms: Set of HPO term IDs from the patient.
+        gene_terms: Set of HPO term IDs associated with the gene.
+
+    Returns:
+        Jaccard index (0.0–1.0).  0.0 if both sets are empty.
+
+    References:
+        Jaccard 1912 — coefficient of community.
+    """
+    if not patient_terms and not gene_terms:
+        return 0.0
+    intersection = patient_terms & gene_terms
+    union = patient_terms | gene_terms
+    return len(intersection) / len(union) if union else 0.0
+
+
+def score_genes_by_hpo(
+    patient_hpo_terms: list[str],
+    gene_hpo_map: dict[str, set[str]],
+    method: str = "jaccard",
+) -> list[GeneHPOScore]:
+    """Score all genes by HPO phenotypic similarity to the patient.
+
+    Args:
+        patient_hpo_terms: List of HPO term IDs from the patient phenopacket.
+        gene_hpo_map: Dict mapping gene symbol → set of HPO term IDs.
+            Generated by load_hpo_gene_annotations().
+        method: Scoring algorithm to use.
+            ``"jaccard"`` — Jaccard index (fast, set overlap).
+            ``"bma"``     — Best Match Average (not yet implemented;
+                            use Exomiser for full BMA Resnik scoring).
+
+    Returns:
+        List of GeneHPOScore objects sorted by score descending.
+        Only genes with score > 0 are included.
+
+    References:
+        Köhler et al. 2021 PMID:33264411 (HPO).
+        Robinson et al. 2023 PMID:37604970 (Exomiser BMA Resnik).
+    """
+    if not patient_hpo_terms:
+        logger.warning("No patient HPO terms provided for scoring.")
+        return []
+
+    patient_set = set(patient_hpo_terms)
+    scores: list[GeneHPOScore] = []
+
+    for gene_symbol, gene_term_set in gene_hpo_map.items():
+        if method == "jaccard":
+            sim = jaccard_score(patient_set, gene_term_set)
+        else:
+            # BMA Resnik requires HPO ontology graph — fall back to Jaccard
+            logger.debug("Method '%s' not implemented; using Jaccard.", method)
+            sim = jaccard_score(patient_set, gene_term_set)
+
+        if sim > 0:
+            matched = sorted(patient_set & gene_term_set)
+            scores.append(
+                GeneHPOScore(
+                    gene_symbol=gene_symbol,
+                    entrez_id="",
+                    score=sim,
+                    method=method,
+                    matched_terms=matched,
+                    patient_terms=sorted(patient_set),
+                    gene_terms=sorted(gene_term_set),
+                )
+            )
+
+    scores.sort(key=lambda s: s.score, reverse=True)
+    logger.info(
+        "HPO scoring: %d/%d genes have score > 0 (method=%s)",
+        len(scores),
+        len(gene_hpo_map),
+        method,
+    )
+    return scores
+
+
+def get_top_genes(
+    patient_hpo_terms: list[str],
+    gene_hpo_map: dict[str, set[str]],
+    top_n: int = 50,
+    min_score: float = 0.05,
+) -> list[GeneHPOScore]:
+    """Return the top-N HPO-scored genes above a minimum similarity threshold.
+
+    Args:
+        patient_hpo_terms: Patient HPO term IDs.
+        gene_hpo_map: Gene symbol → HPO term set mapping.
+        top_n: Maximum number of top genes to return (default 50).
+        min_score: Minimum Jaccard score to include a gene (default 0.05).
+
+    Returns:
+        List of up to top_n GeneHPOScore objects with score ≥ min_score.
+    """
+    all_scores = score_genes_by_hpo(patient_hpo_terms, gene_hpo_map)
+    filtered = [s for s in all_scores if s.score >= min_score]
+    return filtered[:top_n]
