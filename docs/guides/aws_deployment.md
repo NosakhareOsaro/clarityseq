@@ -1,6 +1,6 @@
 # AWS Deployment Guide
 
-Deploy GenomeForge on AWS using Terraform (provider v5) + AWS Batch + RDS PostgreSQL 16.
+Deploy ClaritySeq on AWS using Terraform (provider v5) + AWS Batch + RDS PostgreSQL 16.
 
 ## Architecture overview
 
@@ -49,10 +49,10 @@ gh --version
 
 ```bash
 # 1. Configure AWS credentials
-aws configure --profile genomeforge
+aws configure --profile clarityseq
 
 # 2. Create Terraform state bucket
-aws s3 mb s3://genomeforge-terraform-state --region eu-west-2
+aws s3 mb s3://clarityseq-terraform-state --region eu-west-2
 
 # 3. Deploy infrastructure
 cd terraform
@@ -66,9 +66,9 @@ make ecr-push
 
 # 5. Run a test sample
 aws batch submit-job \
-  --job-name genomeforge-test-HG001 \
-  --job-queue genomeforge-spot \
-  --job-definition genomeforge-pipeline \
+  --job-name clarityseq-test-HG001 \
+  --job-queue clarityseq-spot \
+  --job-definition clarityseq-pipeline \
   --container-overrides '{"command": ["nextflow", "run", "pipelines/wgs_grch38.nf", "-profile", "test"]}'
 ```
 

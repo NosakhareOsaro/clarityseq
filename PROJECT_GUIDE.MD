@@ -1,4 +1,4 @@
-# GenomeForge — Claude Code Build Prompt (FINAL, UPDATED)
+# ClaritySeq — Claude Code Build Prompt (FINAL, UPDATED)
 
 ## Complete Start-to-Finish Instructions · June 2026 Edition
 
@@ -19,7 +19,7 @@
 
 ### 0.1 What you are building
 
-You are building **GenomeForge** — a production-grade, research-novel
+You are building **ClaritySeq** — a production-grade, research-novel
 whole-genome sequencing (WGS) clinical variant interpretation platform
 with seven distinct novel contributions not present in any existing
 public pipeline.
@@ -124,7 +124,7 @@ Apply ALL of the following to **every single file**:
 
 8. No file longer than 500 lines — split into logical sub-modules.
 
-9. Every TODO marked `# TODO(genomeforge):` with a description.
+9. Every TODO marked `# TODO(clarityseq):` with a description.
 
 10. Every ACMG rule function cites: Richards 2015 PMID:25741868, the ClinGen
     SVI recommendation, and the ACGS 2024 v1.2 section number.
@@ -166,11 +166,11 @@ Optional (note if absent but do not fail):
 
 Using `gh repo create`:
 
-- Name: `genome-forge`
+- Name: `clarityseq`
 - Public visibility
 - Description: "Production WGS clinical interpretation: DRAGEN-GATK +
   pangenome + Bayesian ACMG (ACGS 2024 v1.2) + ClinVar reclassification
-  daemon + GA4GH Beacon v2.1.1 + VRS v2.0 · GenomeForge 2026"
+  daemon + GA4GH Beacon v2.1.1 + VRS v2.0 · ClaritySeq 2026"
 
 Clone locally and `cd` into it.
 
@@ -180,7 +180,7 @@ Create every directory listed below. Every directory gets a `README.md`
 explaining what belongs there. Empty directories get `.gitkeep`.
 
 ```
-genome-forge/
+clarityseq/
 ├── .github/
 │   ├── workflows/
 │   │   ├── ci.yml
@@ -315,7 +315,7 @@ genome-forge/
 │   ├── Dockerfile.pipeline    # Ubuntu 24.04; GATK 4.6.0.0
 │   ├── Dockerfile.beacon
 │   └── Dockerfile.daemon
-├── singularity/genome-forge.def
+├── singularity/clarityseq.def
 ├── terraform/
 │   ├── main.tf                # AWS provider v5
 │   ├── variables.tf
@@ -381,7 +381,7 @@ AWS_REGION=eu-west-2
 AWS_ACCOUNT_ID=
 
 # Database
-POSTGRES_DSN=postgresql+asyncpg://user:pass@localhost:5432/genomeforge
+POSTGRES_DSN=postgresql+asyncpg://user:pass@localhost:5432/clarityseq
 REDIS_URL=redis://localhost:6379/0
 
 # External APIs
@@ -431,7 +431,7 @@ DBNSFP_DB_PATH=/data/dbNSFP4.7_variant.chr*.gz
 
 **`CITATION.cff`** — CFF v1.2.0:
 
-- title: "GenomeForge: a DRAGEN-GATK pangenome-aware clinical WGS platform
+- title: "ClaritySeq: a DRAGEN-GATK pangenome-aware clinical WGS platform
   with Bayesian ACMG classification (ACGS 2024 v1.2), automated ClinVar
   reclassification monitoring, and GA4GH Beacon v2.1.1 federation"
 - version: "0.1.0"
@@ -1153,7 +1153,7 @@ dbNSFP v4.7 additions over v4.6:
 - Interpro domain annotations (updated)
 - Updated MetaRNN, SIFT4G, MutPred2
 
-In GenomeForge, dbNSFP v4.7 is accessed via the VEP dbNSFP plugin
+In ClaritySeq, dbNSFP v4.7 is accessed via the VEP dbNSFP plugin
 (configured in modules/vep/main.nf). This Python client provides
 direct lookup for use in BayesACMG rule functions where VEP is not
 available (e.g., for post-VEP score updates).
@@ -1676,7 +1676,7 @@ terraform {
 # db.t4g.micro vs db.t3.micro:
 #   - 30% cheaper (~$12/month vs ~$16/month)
 #   - AWS Graviton2; better price-performance for PostgreSQL workloads
-resource "aws_db_instance" "genomeforge" {
+resource "aws_db_instance" "clarityseq" {
   engine         = "postgres"
   engine_version = "16"       # Must be 16; not 14 or 15
   instance_class = "db.t4g.micro"
@@ -1737,7 +1737,7 @@ Status → Context → Decision → Consequences → Alternatives considered
 NEW FILE documenting the full ACGS 2024 + ClinGen SVI 2024 implementation:
 
 ```markdown
-# ACMG Variant Classification in GenomeForge
+# ACMG Variant Classification in ClaritySeq
 
 ## ACGS 2024 v1.2 + ClinGen SVI 2024 Implementation
 
@@ -1841,7 +1841,7 @@ git push origin main
 
 ```python
 """
-Integration test: full GenomeForge pipeline on GIAB HG001 chr22.
+Integration test: full ClaritySeq pipeline on GIAB HG001 chr22.
 
 All 12 criteria must pass for a green release. Each assertion documents
 which clinical requirement it validates.
@@ -1882,7 +1882,7 @@ pytest \
 
 ```
 git add -A
-git commit -m "feat: GenomeForge v0.1.0 complete — ACGS 2024 + DRAGEN-GATK + 7 novel contributions
+git commit -m "feat: ClaritySeq v0.1.0 complete — ACGS 2024 + DRAGEN-GATK + 7 novel contributions
 
 ## Guidelines and tools (verified current as of June 2026)
 
@@ -1938,7 +1938,7 @@ Infrastructure:
 - MANE Select transcripts verified in integration test
 - gnomAD v4.1 (not v4.0) throughout"
 
-git tag -a v0.1.0 -m "GenomeForge v0.1.0
+git tag -a v0.1.0 -m "ClaritySeq v0.1.0
 
 ACGS 2024 v1.2 · ClinGen SVI 2024 · DRAGEN-GATK · DeepVariant 1.8.0
 gnomAD v4.1 · AlphaMissense (PP3/BP4) · VEP v111 (MANE Select)
@@ -1963,7 +1963,7 @@ pytest --cov --cov-report=term-missing 2>&1 | grep "TOTAL"
 docker build -f docker/Dockerfile.pipeline \
   --build-arg GATK_VERSION=4.6.0.0 \
   --build-arg DRAGMAP_VERSION=1.3.0 \
-  -t genome-forge-pipeline:v0.1.0 .
+  -t clarityseq-pipeline:v0.1.0 .
 
 # 4. BayesACMG installs and CLI works
 pip install -e bayesacmg/[dev]
@@ -2050,7 +2050,7 @@ print('Beacon v2.1.1 ✓')
 
 2. **Never write placeholder functions.** Every function is fully implemented.
    If an external tool is needed, write complete logic and mark:
-   `# TODO(genomeforge): requires <tool> vX.Y installed`
+   `# TODO(clarityseq): requires <tool> vX.Y installed`
 
 3. **PM2 is ALWAYS Supporting (1 pt).** If you write PM2 as Moderate (2 pts)
    anywhere, it violates ClinGen SVI 2024. Add this assertion to any PM2 test.
@@ -2082,7 +2082,7 @@ print('Beacon v2.1.1 ✓')
 
 ---
 
-_GenomeForge Claude Code Prompt — FINAL VERSION — June 2026_
+_ClaritySeq Claude Code Prompt — FINAL VERSION — June 2026_
 _All tools verified against: ACGS 2024 v1.2 (Durkie et al., Feb 2024) ·_
 _ClinGen SVI 2024 guidelines · GATK Best Practices (DRAGEN-GATK) ·_
 _DeepVariant 1.8.0 release notes · gnomAD v4.1 release notes (April 2024) ·_

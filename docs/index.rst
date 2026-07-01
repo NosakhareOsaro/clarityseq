@@ -1,7 +1,7 @@
-GenomeForge Documentation
+ClaritySeq Documentation
 =========================
 
-**GenomeForge** is a production-grade, research-novel whole-genome sequencing (WGS)
+**ClaritySeq** is a production-grade, research-novel whole-genome sequencing (WGS)
 clinical variant interpretation platform.
 
 .. image:: https://img.shields.io/badge/ACGS-2024%20v1.2-blue

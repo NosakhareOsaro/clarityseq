@@ -1,4 +1,4 @@
-"""Reclassification daemon package for GenomeForge WGS platform.
+"""Reclassification daemon package for ClaritySeq WGS platform.
 
 This package implements the weekly ClinVar variant reclassification monitoring
 daemon, FHIR R4 Task generation for clinical recontact workflows, and

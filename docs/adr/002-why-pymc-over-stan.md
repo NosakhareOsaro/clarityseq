@@ -2,14 +2,14 @@
 
 **Status:** Accepted  
 **Date:** 2026-06-22  
-**Deciders:** GenomeForge core team  
+**Deciders:** ClaritySeq core team  
 **Category:** Bayesian modelling
 
 ---
 
 ## Context
 
-GenomeForge's BayesACMG module implements a fully Bayesian ACMG/AMP variant
+ClaritySeq's BayesACMG module implements a fully Bayesian ACMG/AMP variant
 classification model. The model computes posterior probabilities of pathogenicity
 given observed evidence (28 ACMG rules, ClinGen SVI 2024 updates, VCEP overrides).
 
@@ -30,7 +30,7 @@ Two leading probabilistic programming frameworks were evaluated:
 
 ### 1. Python-native ecosystem
 
-GenomeForge is a Python 3.12 project. PyMC integrates seamlessly with:
+ClaritySeq is a Python 3.12 project. PyMC integrates seamlessly with:
 
 - **NumPy/SciPy**: for evidence weight matrices
 - **pandas**: for ClinVar calibration data loading

@@ -1,6 +1,6 @@
 # pipelines/
 
-Nextflow DSL2 pipeline entry points for GenomeForge.
+Nextflow DSL2 pipeline entry points for ClaritySeq.
 
 | File | Description |
 |------|-------------|

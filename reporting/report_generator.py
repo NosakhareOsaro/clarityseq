@@ -124,7 +124,7 @@ class ReportConfig:
         referral_indication: Clinical referral indication (HPO/ICD-10).
         referring_clinician: Name of referring clinician.
         laboratory: Laboratory name.
-        pipeline_version: GenomeForge pipeline version string.
+        pipeline_version: ClaritySeq pipeline version string.
         report_date: Report generation date (ISO8601).
         assembly: Genome assembly (default ``"GRCh38"``).
         acgs_version: ACGS guidelines version (default ``"2024 v1.2"``).
@@ -139,7 +139,7 @@ class ReportConfig:
     sample_id: str
     referral_indication: str = ""
     referring_clinician: str = ""
-    laboratory: str = "GenomeForge Genomics Laboratory"
+    laboratory: str = "ClaritySeq Genomics Laboratory"
     pipeline_version: str = "1.0.0"
     report_date: str = ""
     assembly: str = "GRCh38"
@@ -332,7 +332,7 @@ class ReportGenerator:
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>GenomeForge Clinical Report — {self.config.patient_id}</title>
+<title>ClaritySeq Clinical Report — {self.config.patient_id}</title>
 <style>
 body {{ font-family: Arial, sans-serif; font-size: 11pt; margin: 2cm; }}
 h1 {{ color: #003087; }}
@@ -357,7 +357,7 @@ tr:nth-child(even) {{ background: #f5f5f5; }}
     <th>Laboratory</th><td>{self.config.laboratory}</td></tr>
 <tr><th>Referral</th><td colspan="3">{self.config.referral_indication}</td></tr>
 <tr><th>Assembly</th><td>{self.config.assembly}</td>
-    <th>Pipeline</th><td>GenomeForge v{self.config.pipeline_version}</td></tr>
+    <th>Pipeline</th><td>ClaritySeq v{self.config.pipeline_version}</td></tr>
 </table>
 
 <h2>Summary</h2>

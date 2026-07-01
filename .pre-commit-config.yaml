@@ -1,5 +1,5 @@
 # =============================================================================
-# GenomeForge — pre-commit hook configuration
+# ClaritySeq — pre-commit hook configuration
 # =============================================================================
 # Enforces code quality at commit time.
 # Install hooks: pre-commit install

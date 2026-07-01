@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 // ============================================================================
-// GenomeForge — HPRC Pangenome Pipeline Arm
+// ClaritySeq — HPRC Pangenome Pipeline Arm
 // ============================================================================
 // Aligns short Illumina reads to the HPRC v1.1 minigraph-cactus pangenome
 // graph using vg giraffe, outputs a GRCh38-coordinate BAM, and calls variants
@@ -94,7 +94,7 @@ workflow WGS_PANGENOME {
         // STEP 5: DEEPVARIANT_CALL (WGS model; pangenome BAM)
         // STEP 6: ENSEMBLE_MERGE (same INTERSECTION mode as GRCh38 arm)
         // STEP 7: VEP_ANNOTATE + ALPHAMISSENSE_LOOKUP
-        // Tracked in: https://github.com/genomeforge/genomeforge/issues/PANGENOME-CALLING
+        // Tracked in: https://github.com/clarityseq/clarityseq/issues/PANGENOME-CALLING
         log.info "WGS_PANGENOME: alignment complete. Variant calling stub — see TODO."
 
     emit:

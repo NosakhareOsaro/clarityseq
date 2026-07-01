@@ -1,8 +1,8 @@
-<!-- GenomeForge README -->
-# GenomeForge
+<!-- ClaritySeq README -->
+# ClaritySeq
 
-[![CI](https://github.com/genome-forge/genome-forge/actions/workflows/ci.yml/badge.svg)](https://github.com/genome-forge/genome-forge/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-≥90%25-brightgreen)](https://github.com/genome-forge/genome-forge)
+[![CI](https://github.com/clarityseq/clarityseq/actions/workflows/ci.yml/badge.svg)](https://github.com/clarityseq/clarityseq/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-≥90%25-brightgreen)](https://github.com/clarityseq/clarityseq)
 [![DOI](https://img.shields.io/badge/DOI-10.xxxx%2Fxxxxxx-blue)](https://doi.org/10.xxxx/xxxxxx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
@@ -19,7 +19,7 @@ Stack: DRAGEN-GATK 4.6.0.0 · DeepVariant 1.8.0 · HPRC pangenome · VEP v111 ·
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/genome-forge/genome-forge && cd genome-forge
+git clone https://github.com/clarityseq/clarityseq && cd clarityseq
 pip install -e "bayesacmg/[dev]"
 
 # 2. Configure paths
@@ -54,7 +54,7 @@ open results/Sample1/report/Sample1_clinical_report.html
 
 ## What makes this different from nf-core/sarek
 
-| Feature | nf-core/sarek 3.8.1 | GenomeForge 0.1.0 |
+| Feature | nf-core/sarek 3.8.1 | ClaritySeq 0.1.0 |
 |---------|--------------------|--------------------|
 | ACMG guidelines | ACGS 2020 (via external tools) | **ACGS 2024 v1.2** (built-in BayesACMG) |
 | Variant classification | External (no built-in) | **Bayesian with 95% HDI** (novel) |
@@ -73,7 +73,7 @@ open results/Sample1/report/Sample1_clinical_report.html
 
 ## ACGS 2024 v1.2 compliance statement
 
-GenomeForge implements the ACGS Best Practice Guidelines 2024 v1.2 (Durkie et al., ratified 20 February 2024), which supersedes the ACGS 2020 guidelines. Key implementations:
+ClaritySeq implements the ACGS Best Practice Guidelines 2024 v1.2 (Durkie et al., ratified 20 February 2024), which supersedes the ACGS 2020 guidelines. Key implementations:
 
 - **§5**: PM2 at Supporting weight (1 pt); AlphaMissense as primary PP3/BP4; MANE Select transcript notation
 - **§6**: Mitochondrial variant classification (haplogroup first; heteroplasmy levels; mito-specific BA1/PM2)
@@ -153,15 +153,15 @@ flowchart TD
 
 ---
 
-## Citing GenomeForge
+## Citing ClaritySeq
 
 ```bibtex
-@software{genomeforge2026,
-  title = {GenomeForge: a DRAGEN-GATK pangenome-aware clinical WGS platform
+@software{clarityseq2026,
+  title = {ClaritySeq: a DRAGEN-GATK pangenome-aware clinical WGS platform
     with Bayesian ACMG classification (ACGS 2024 v1.2)},
   version = {0.1.0},
   year = {2026},
-  url = {https://github.com/genome-forge/genome-forge}
+  url = {https://github.com/clarityseq/clarityseq}
 }
 ```
 

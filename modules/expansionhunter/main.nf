@@ -53,7 +53,7 @@
 //
 // NOTE — TOOL SELECTION RATIONALE:
 //   TRGT (Tandem Repeat Genotyper) is NOT used in this module.
-//   TRGT requires PacBio HiFi long reads (>10 kb). GenomeForge targets
+//   TRGT requires PacBio HiFi long reads (>10 kb). ClaritySeq targets
 //   Illumina short-read WGS (150 bp PE, 30× minimum). ExpansionHunter is
 //   the clinically validated tool for short-read STR genotyping and is used
 //   in NHS Genomic Medicine Service (GMS) accredited pipelines.

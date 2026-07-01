@@ -1,6 +1,6 @@
 # Quick-start Guide
 
-Run your first GenomeForge WGS analysis in 5 commands.
+Run your first ClaritySeq WGS analysis in 5 commands.
 
 ## Prerequisites
 
@@ -13,7 +13,7 @@ Run your first GenomeForge WGS analysis in 5 commands.
 
 ```bash
 # 1. Clone repository
-git clone https://github.com/genome-forge/genome-forge.git && cd genome-forge
+git clone https://github.com/clarityseq/clarityseq.git && cd clarityseq
 
 # 2. Configure environment
 cp .env.example .env

@@ -1,6 +1,6 @@
 # docker/
 
-Multi-stage Docker images for GenomeForge components. All based on Ubuntu 24.04 LTS.
+Multi-stage Docker images for ClaritySeq components. All based on Ubuntu 24.04 LTS.
 
 ## Images
 
@@ -25,9 +25,9 @@ Multi-stage Docker images for GenomeForge components. All based on Ubuntu 24.04 
 make docker-build
 
 # Build individually
-docker build -f docker/Dockerfile.pipeline -t genomeforge/pipeline:0.1.0 .
-docker build -f docker/Dockerfile.beacon -t genomeforge/beacon:0.1.0 .
-docker build -f docker/Dockerfile.daemon -t genomeforge/daemon:0.1.0 .
+docker build -f docker/Dockerfile.pipeline -t clarityseq/pipeline:0.1.0 .
+docker build -f docker/Dockerfile.beacon -t clarityseq/beacon:0.1.0 .
+docker build -f docker/Dockerfile.daemon -t clarityseq/daemon:0.1.0 .
 ```
 
 ## DeepVariant note

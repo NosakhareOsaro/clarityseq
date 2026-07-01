@@ -1,8 +1,8 @@
-# ACMG Variant Classification in GenomeForge
+# ACMG Variant Classification in ClaritySeq
 
 ## Guidelines implemented
 
-GenomeForge implements ACMG/AMP classification under four overlapping guideline documents:
+ClaritySeq implements ACMG/AMP classification under four overlapping guideline documents:
 
 | Guideline | Reference | Notes |
 |-----------|-----------|-------|
@@ -30,7 +30,7 @@ gnomAD v4.1 (released April 19, 2024) contains 807,162 individuals — the large
 
 ### Impact
 
-PM2 downgrade from Moderate (2 pts) to Supporting (1 pt) affects variant classifications near the LP/VUS threshold. GenomeForge implements the **novel ClinGen SVI 2024 combination** to address this:
+PM2 downgrade from Moderate (2 pts) to Supporting (1 pt) affects variant classifications near the LP/VUS threshold. ClaritySeq implements the **novel ClinGen SVI 2024 combination** to address this:
 
 ```
 PVS1 (8 pts) + PM2_Supporting (1 pt) = 9 pts → Likely Pathogenic
@@ -49,9 +49,9 @@ Some VCEP gene-specific specifications allow PM2 at Moderate for specific gene-d
 
 ## AlphaMissense as primary PP3/BP4 predictor
 
-**ClinGen SVI 2024 approved four in silico tools** for PP3/BP4 evidence. GenomeForge uses AlphaMissense as the **primary** tool:
+**ClinGen SVI 2024 approved four in silico tools** for PP3/BP4 evidence. ClaritySeq uses AlphaMissense as the **primary** tool:
 
-| Tool | PP3 threshold | BP4 threshold | Status in GenomeForge |
+| Tool | PP3 threshold | BP4 threshold | Status in ClaritySeq |
 |------|--------------|--------------|----------------------|
 | **AlphaMissense** | **≥ 0.564** | **≤ 0.340** | **PRIMARY** |
 | REVEL | ≥ 0.7 | ≤ 0.15 | Secondary comparator |
@@ -94,7 +94,7 @@ For canonical splice site variants and deep intronic variants, the ClinGen SVI S
 
 ## MANE Select transcript notation
 
-All HGVSc and HGVSp notation in GenomeForge uses **MANE Select** transcripts.
+All HGVSc and HGVSp notation in ClaritySeq uses **MANE Select** transcripts.
 
 MANE (Matched Annotation from NCBI and EBI) Select provides one biologically-relevant transcript per protein-coding gene, jointly maintained by NCBI RefSeq and EMBL-EBI Ensembl.
 
@@ -125,7 +125,7 @@ Mitochondrial variants follow ACGS 2024 v1.2 §6 — a separate set of rules fro
 
 ClinGen Variant Curation Expert Panels (VCEPs) publish gene-specific specifications that override the general 28-rule framework for specific genes (e.g., BRCA1/2, RASopathy genes, CDH1).
 
-GenomeForge queries the **ClinGen CSpec registry API** before classifying each variant. If a VCEP specification exists for the gene, those thresholds and rule modifications take precedence.
+ClaritySeq queries the **ClinGen CSpec registry API** before classifying each variant. If a VCEP specification exists for the gene, those thresholds and rule modifications take precedence.
 
 Common VCEP overrides:
 - BRCA1/2: Modified PM2 threshold; additional evidence codes
@@ -140,7 +140,7 @@ Common VCEP overrides:
 
 ACGS 2024 v1.2 §9 requires: *"For VUS variants, review within 2 years is recommended."*
 
-GenomeForge implements this by:
+ClaritySeq implements this by:
 1. Every VUS classification triggers creation of a `VUSReviewSchedule` record (variant_id, review_due = classification_date + 2 years)
 2. The ClinVar reclassification daemon checks these dates weekly
 3. The clinical report displays: **"Review by: [date]"** for each VUS
@@ -154,7 +154,7 @@ GenomeForge implements this by:
 
 ACGS 2024 v1.2 Introduction: *"Submission of variants to ClinVar by NHS laboratories in England is now a requirement following completion of the information governance review process."*
 
-GenomeForge automates ClinVar submission for novel P/LP variants:
+ClaritySeq automates ClinVar submission for novel P/LP variants:
 1. Variant classified as P or LP (BayesACMG posterior probability ≥ 0.90)
 2. Not already in ClinVar (no RCV/SCV accession)
 3. Added to `ClinVarSubmissionQueue` table
@@ -168,7 +168,7 @@ GenomeForge automates ClinVar submission for novel P/LP variants:
 
 ## Bayesian posterior probabilities
 
-GenomeForge reports a **Bayesian posterior probability P(Pathogenic)** alongside the ACMG 5-tier classification, with a **95% highest-density interval (HDI)**.
+ClaritySeq reports a **Bayesian posterior probability P(Pathogenic)** alongside the ACMG 5-tier classification, with a **95% highest-density interval (HDI)**.
 
 Example report entry:
 ```
@@ -176,7 +176,7 @@ BRCA1 NM_007294.4:c.5266dupC (p.Gln1756ProfsTer74)
 Class: Pathogenic | P(Path) = 99% [96%–100%] | gnomAD v4.1: absent
 ```
 
-This Bayesian uncertainty quantification is a novel contribution of GenomeForge — no other clinical WGS platform reports calibrated ACMG classification uncertainty in this format.
+This Bayesian uncertainty quantification is a novel contribution of ClaritySeq — no other clinical WGS platform reports calibrated ACMG classification uncertainty in this format.
 
 **Implementation**: `bayesacmg/src/bayesacmg/model.py`
 **Calibration**: ECE < 0.05 on ClinGen 500-variant set (`calibration/`)

@@ -1,16 +1,16 @@
-# GenomeForge Beacon API Image
+# ClaritySeq Beacon API Image
 # GA4GH Beacon v2.1.1 + VRS v2.0 identifiers + GA4GH Passport authentication
 # Released December 13, 2024; Wagner et al. 2021 PMID:35072137
 #
-# Build: docker build -f docker/Dockerfile.beacon -t genomeforge/beacon:latest .
-# Verify: docker run --rm genomeforge/beacon:latest python -m uvicorn --help
+# Build: docker build -f docker/Dockerfile.beacon -t clarityseq/beacon:latest .
+# Verify: docker run --rm clarityseq/beacon:latest python -m uvicorn --help
 #
 # Hadolint: hadolint docker/Dockerfile.beacon
 
 FROM python:3.12-slim AS base
 
-LABEL maintainer="GenomeForge Team <genomeforge@noreply.github.com>" \
-      org.opencontainers.image.title="GenomeForge Beacon API" \
+LABEL maintainer="ClaritySeq Team <clarityseq@noreply.github.com>" \
+      org.opencontainers.image.title="ClaritySeq Beacon API" \
       org.opencontainers.image.description="GA4GH Beacon v2.1.1 with VRS v2.0 identifiers" \
       org.opencontainers.image.version="0.1.0" \
       org.opencontainers.image.licenses="MIT"

@@ -1,4 +1,4 @@
-# GenomeForge — AWS Batch (Spot fleet for Nextflow pipeline)
+# ClaritySeq — AWS Batch (Spot fleet for Nextflow pipeline)
 #
 # Cost model: Spot instances at 60% of on-demand price = ~40% cost saving.
 # A typical 30× WGS run (DRAGMAP + GATK4 + DeepVariant) costs ~$8–15 on Spot.
@@ -10,13 +10,13 @@
 #
 # Nextflow config:
 #   process.executor = 'awsbatch'
-#   process.queue    = 'genomeforge-spot'
+#   process.queue    = 'clarityseq-spot'
 #   aws.region       = 'us-east-1'
 #   aws.batch.jobRole = '<batch_job_role_arn>'
 
 # ── Compute environment (Spot) ────────────────────────────────────────────────
 resource "aws_batch_compute_environment" "spot" {
-  compute_environment_name = "genomeforge-spot"
+  compute_environment_name = "clarityseq-spot"
   type                     = "MANAGED"
   state                    = "ENABLED"
 
@@ -40,7 +40,7 @@ resource "aws_batch_compute_environment" "spot" {
     # Ubuntu 24.04 ECS-optimised AMI would require custom AMI — use default ECS AMI
     # (GATK tools run inside Docker containers, so host OS is less critical)
 
-    tags = { Name = "genomeforge-batch-spot" }
+    tags = { Name = "clarityseq-batch-spot" }
   }
 
   service_role = aws_iam_role.batch_service.arn
@@ -53,7 +53,7 @@ resource "aws_batch_compute_environment" "spot" {
 
 # On-demand fallback (for jobs requiring guaranteed capacity: clinical urgency)
 resource "aws_batch_compute_environment" "ondemand" {
-  compute_environment_name = "genomeforge-ondemand"
+  compute_environment_name = "clarityseq-ondemand"
   type                     = "MANAGED"
   state                    = "ENABLED"
 
@@ -72,7 +72,7 @@ resource "aws_batch_compute_environment" "ondemand" {
 
     instance_role = aws_iam_instance_profile.batch.arn
 
-    tags = { Name = "genomeforge-batch-ondemand" }
+    tags = { Name = "clarityseq-batch-ondemand" }
   }
 
   service_role = aws_iam_role.batch_service.arn
@@ -86,7 +86,7 @@ resource "aws_batch_compute_environment" "ondemand" {
 # ── Job queues ────────────────────────────────────────────────────────────────
 # Spot queue with on-demand fallback (Nextflow uses this for all pipeline steps)
 resource "aws_batch_job_queue" "main" {
-  name     = "genomeforge-spot"
+  name     = "clarityseq-spot"
   state    = "ENABLED"
   priority = 1
 
@@ -103,7 +103,7 @@ resource "aws_batch_job_queue" "main" {
 
 # High-priority queue for clinical-urgent runs (on-demand only)
 resource "aws_batch_job_queue" "urgent" {
-  name     = "genomeforge-urgent"
+  name     = "clarityseq-urgent"
   state    = "ENABLED"
   priority = 100  # Higher priority than main queue
 
@@ -115,7 +115,7 @@ resource "aws_batch_job_queue" "urgent" {
 
 # ── Batch service role ────────────────────────────────────────────────────────
 resource "aws_iam_role" "batch_service" {
-  name = "genomeforge-batch-service"
+  name = "clarityseq-batch-service"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

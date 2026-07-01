@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 // ============================================================================
-// GenomeForge — Short Tandem Repeat Expansion Sub-Workflow
+// ClaritySeq — Short Tandem Repeat Expansion Sub-Workflow
 // ============================================================================
 // Genotypes repeat expansions using ExpansionHunter v5.0 (60-locus catalog).
 //
@@ -14,7 +14,7 @@
 // TOOL SELECTION — WHY EXPANSIONHUNTER AND NOT TRGT:
 //   TRGT (Tandem Repeat Genotyper by PacBio) is NOT used because:
 //     - TRGT requires PacBio HiFi long reads (>10 kb continuous reads)
-//     - GenomeForge targets Illumina short-read WGS (150 bp PE)
+//     - ClaritySeq targets Illumina short-read WGS (150 bp PE)
 //     - ExpansionHunter is validated for short-read STR calling and is used
 //       in NHS GMS accredited pipelines for clinical STR detection
 //   Reference: Dolzhenko et al. 2024 Current Protocols doi:10.1002/cpz1.70010

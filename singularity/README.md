@@ -6,13 +6,13 @@ Singularity/Apptainer container definition for HPC deployment.
 
 ```bash
 # Build from definition file (requires root or --fakeroot)
-singularity build genome-forge.sif singularity/genome-forge.def
+singularity build clarityseq.sif singularity/clarityseq.def
 
 # Run pipeline with Singularity
-nextflow run pipelines/wgs_grch38.nf -profile hpc --singularity_image genome-forge.sif
+nextflow run pipelines/wgs_grch38.nf -profile hpc --singularity_image clarityseq.sif
 
 # Or with Apptainer (rootless)
-apptainer build genome-forge.sif singularity/genome-forge.def
+apptainer build clarityseq.sif singularity/clarityseq.def
 ```
 
 ## Note on DeepVariant

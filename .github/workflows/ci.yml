@@ -1,4 +1,4 @@
-# GenomeForge CI Workflow
+# ClaritySeq CI Workflow
 #
 # Acceptance criteria (CI FAILS if these are not met):
 #   - SNP sensitivity ≥ 99.0% vs GIAB HG001 chr22 truth (hap.py v0.3.15)
@@ -176,12 +176,12 @@ jobs:
           context: .
           file: docker/Dockerfile.pipeline
           push: false
-          tags: genomeforge/pipeline:ci-test
+          tags: clarityseq/pipeline:ci-test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Verify pipeline image runs --help
-        run: docker run --rm genomeforge/pipeline:ci-test gatk --help
+        run: docker run --rm clarityseq/pipeline:ci-test gatk --help
 
       - name: Build beacon image
         uses: docker/build-push-action@v5
@@ -189,13 +189,13 @@ jobs:
           context: .
           file: docker/Dockerfile.beacon
           push: false
-          tags: genomeforge/beacon:ci-test
+          tags: clarityseq/beacon:ci-test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Verify beacon image starts
         run: |
-          docker run --rm -d --name beacon-test -p 8080:8080 genomeforge/beacon:ci-test
+          docker run --rm -d --name beacon-test -p 8080:8080 clarityseq/beacon:ci-test
           sleep 5
           curl -f http://localhost:8080/info || (docker logs beacon-test && exit 1)
           docker stop beacon-test
@@ -206,9 +206,9 @@ jobs:
           context: .
           file: docker/Dockerfile.daemon
           push: false
-          tags: genomeforge/daemon:ci-test
+          tags: clarityseq/daemon:ci-test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Verify daemon image Celery inspect
-        run: docker run --rm genomeforge/daemon:ci-test celery --version
+        run: docker run --rm clarityseq/daemon:ci-test celery --version

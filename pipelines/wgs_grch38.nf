@@ -1,12 +1,12 @@
 #!/usr/bin/env nextflow
 
 // =============================================================================
-// GenomeForge — Primary WGS Pipeline (GRCh38)
+// ClaritySeq — Primary WGS Pipeline (GRCh38)
 // =============================================================================
 //
 // OVERVIEW
 // --------
-// This pipeline implements the GenomeForge DRAGEN-GATK WGS clinical variant
+// This pipeline implements the ClaritySeq DRAGEN-GATK WGS clinical variant
 // interpretation workflow for GRCh38, producing annotated variants, Bayesian
 // ACMG classifications, and NHS GMS-style clinical reports.
 //
@@ -122,7 +122,7 @@
 //
 // AUTHORS
 // -------
-// GenomeForge Contributors
+// ClaritySeq Contributors
 // SPDX-License-Identifier: MIT
 // =============================================================================
 
@@ -377,7 +377,7 @@ workflow {
 workflow.onComplete {
     log.info """
     =========================================
-    GenomeForge WGS Pipeline (GRCh38)
+    ClaritySeq WGS Pipeline (GRCh38)
     =========================================
     Pipeline : DRAGEN-GATK + DeepVariant ensemble
     ACMG     : BayesACMG (ACGS 2024 v1.2; PM2=Supporting)

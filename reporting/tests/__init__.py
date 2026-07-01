@@ -1,1 +1,1 @@
-"""Tests for the GenomeForge reporting module."""
+"""Tests for the ClaritySeq reporting module."""

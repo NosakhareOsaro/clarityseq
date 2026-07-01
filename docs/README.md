@@ -1,6 +1,6 @@
 # docs/
 
-GenomeForge documentation (Sphinx + autodoc + napoleon + mermaid + furo theme).
+ClaritySeq documentation (Sphinx + autodoc + napoleon + mermaid + furo theme).
 
 ## Structure
 

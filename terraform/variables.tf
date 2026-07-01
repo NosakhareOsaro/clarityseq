@@ -1,4 +1,4 @@
-# GenomeForge Terraform Variables
+# ClaritySeq Terraform Variables
 # Override defaults in terraform.tfvars or via -var flags
 
 variable "aws_region" {
@@ -20,7 +20,7 @@ variable "environment" {
 
 variable "vpc_cidr" {
   type        = string
-  description = "CIDR block for the GenomeForge VPC"
+  description = "CIDR block for the ClaritySeq VPC"
   default     = "10.0.0.0/16"
 }
 
@@ -62,13 +62,13 @@ variable "db_instance_class" {
 variable "db_name" {
   type        = string
   description = "PostgreSQL database name"
-  default     = "genomeforge"
+  default     = "clarityseq"
 }
 
 variable "db_username" {
   type        = string
   description = "PostgreSQL admin username"
-  default     = "genomeforge"
+  default     = "clarityseq"
   sensitive   = true
 }
 
@@ -95,19 +95,19 @@ variable "db_backup_retention_days" {
 variable "s3_results_bucket" {
   type        = string
   description = "S3 bucket name for pipeline results and reports"
-  default     = "genomeforge-results"
+  default     = "clarityseq-results"
 }
 
 variable "s3_reference_bucket" {
   type        = string
   description = "S3 bucket for reference data (DRAGMAP index, gnomAD v4.1, VEP cache)"
-  default     = "genomeforge-reference"
+  default     = "clarityseq-reference"
 }
 
 variable "s3_clinvar_cache_bucket" {
   type        = string
   description = "S3 bucket for ClinVar weekly diff cache (Celery daemon)"
-  default     = "genomeforge-clinvar-cache"
+  default     = "clarityseq-clinvar-cache"
 }
 
 # ── AWS Batch ────────────────────────────────────────────────────────────────

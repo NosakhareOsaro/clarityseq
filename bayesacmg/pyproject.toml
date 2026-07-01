@@ -16,7 +16,7 @@ Dirichlet-Multinomial model with calibrated 95% credible intervals."""
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.12"
-authors = [{ name = "GenomeForge", email = "osaronosakhare@gmail.com" }]
+authors = [{ name = "ClaritySeq", email = "osaronosakhare@gmail.com" }]
 keywords = [
     "ACMG", "variant classification", "genomics", "Bayesian",
     "ClinGen", "ACGS", "pathogenicity",

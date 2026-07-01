@@ -1,6 +1,6 @@
 # Data Setup Guide
 
-Download and prepare all required reference data before running GenomeForge.
+Download and prepare all required reference data before running ClaritySeq.
 
 ## 1. DRAGMAP hash table (PRIMARY reference)
 

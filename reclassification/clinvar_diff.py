@@ -1,7 +1,7 @@
 """Weekly ClinVar FTP diff for variant reclassification detection.
 
 This module implements the weekly ClinVar VCF diff pipeline that detects
-reclassification events for variants held in the GenomeForge variant
+reclassification events for variants held in the ClaritySeq variant
 catalogue. It is the core data-acquisition component of the ACGS 2024 §9
 reclassification monitoring requirement.
 
@@ -464,7 +464,7 @@ def find_reclassified_variants(
     """Cross-reference local variant catalogue against a ClinVar VCF.
 
     Unlike diff_variants (which compares two ClinVar releases), this function
-    takes the local GenomeForge variant catalogue and identifies variants
+    takes the local ClaritySeq variant catalogue and identifies variants
     whose current ClinVar classification differs from what was recorded at
     the time of clinical reporting.
 
@@ -472,7 +472,7 @@ def find_reclassified_variants(
     uploading a new patient cohort) independent of the weekly diff.
 
     Args:
-        local_variants: List of variant dictionaries from the GenomeForge
+        local_variants: List of variant dictionaries from the ClaritySeq
             variant catalogue. Each dict must contain keys:
             - 'variant_id': Internal identifier (str)
             - 'chrom': Chromosome (str, with 'chr' prefix)

@@ -2,7 +2,7 @@
 // Module: DRAGMAP_ALIGN
 // Description: Aligns paired-end WGS reads to GRCh38 using DRAGMAP v1.3.0,
 //              the open-source implementation of Illumina DRAGEN's hash-table
-//              aligner. This is the PRIMARY aligner in GenomeForge and replaces
+//              aligner. This is the PRIMARY aligner in ClaritySeq and replaces
 //              BWA-MEM2 as the GATK Best Practice since 2021. Produces a
 //              coordinate-sorted BAM ready for MarkDuplicates. BQSR is NOT
 //              applied after DRAGMAP when running in DRAGEN-GATK mode.

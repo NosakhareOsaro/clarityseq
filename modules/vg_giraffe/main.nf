@@ -3,7 +3,7 @@
 // Description: Aligns short Illumina reads to the Human Pangenome Reference
 //              Consortium (HPRC) v1.1 minigraph-cactus pangenome graph using
 //              vg giraffe, a fast read aligner for variation graphs. This
-//              module implements the pangenome arm of the GenomeForge
+//              module implements the pangenome arm of the ClaritySeq
 //              dual-reference strategy (see pipelines/wgs_pangenome.nf).
 //
 //              WHY PANGENOME GRAPH ALIGNMENT:
@@ -138,7 +138,7 @@ process VG_GIRAFFE_ALIGN {
     // Platform and library info for BAM read group (required by GATK4)
     def rg_platform = params.rg_platform ?: "ILLUMINA"
     def rg_library  = params.rg_library  ?: "${sample_id}_lib1"
-    def rg_center   = params.rg_center   ?: "GENOMEFORGE"
+    def rg_center   = params.rg_center   ?: "CLARITYSEQ"
     """
     # ── vg giraffe — pangenome graph alignment ─────────────────────────────
     # HPRC v1.1 minigraph-cactus pangenome graph (47 genomes, 94 haplotypes)

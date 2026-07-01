@@ -1,12 +1,12 @@
 cff-version: 1.2.0
 message: >-
-  If you use GenomeForge in your research, please cite it using the
+  If you use ClaritySeq in your research, please cite it using the
   metadata in this file. For the underlying methods, also cite the
   relevant tools (DRAGMAP, GATK, DeepVariant, VEP, AlphaMissense,
   BayesACMG) as documented in the JOSS paper (joss_paper/paper.md).
 
 title: >-
-  GenomeForge: a DRAGEN-GATK pangenome-aware clinical WGS platform with
+  ClaritySeq: a DRAGEN-GATK pangenome-aware clinical WGS platform with
   Bayesian ACMG classification (ACGS 2024 v1.2), automated ClinVar
   reclassification monitoring, and GA4GH Beacon v2.1.1 federation
 
@@ -14,7 +14,7 @@ version: "0.1.0"
 date-released: "2026-06-23"
 
 abstract: >-
-  GenomeForge is a production-grade, research-novel whole-genome sequencing
+  ClaritySeq is a production-grade, research-novel whole-genome sequencing
   (WGS) clinical variant interpretation platform implementing seven distinct
   novel contributions not present in any existing public pipeline. It combines
   DRAGEN-GATK primary alignment (DRAGMAP v1.3.0 + GATK4 HaplotypeCaller
@@ -31,9 +31,9 @@ abstract: >-
 
 license: MIT
 
-url: "https://github.com/genomeforge/genome-forge"
-repository-code: "https://github.com/genomeforge/genome-forge"
-repository-artifact: "https://github.com/genomeforge/genome-forge/releases"
+url: "https://github.com/clarityseq/clarityseq"
+repository-code: "https://github.com/clarityseq/clarityseq"
+repository-artifact: "https://github.com/clarityseq/clarityseq/releases"
 
 authors:
   - family-names: "Nosakhare"
@@ -78,7 +78,7 @@ keywords:
   - phenopackets-v2
   - expansionhunter
 
-# Key references that GenomeForge implements
+# Key references that ClaritySeq implements
 references:
   - type: article
     title: "Standards and guidelines for the interpretation of sequence variants: a joint consensus recommendation of the American College of Medical Genetics and Genomics and the Association for Molecular Pathology"

@@ -1,4 +1,4 @@
-"""GA4GH Beacon v2.1.1 API package for GenomeForge WGS platform.
+"""GA4GH Beacon v2.1.1 API package for ClaritySeq WGS platform.
 
 Implements the GA4GH Beacon v2.1.1 specification (released December 13, 2024)
 for federated genomic data discovery across NHS GMS sequencing centres.

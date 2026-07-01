@@ -1,9 +1,9 @@
-# GenomeForge — ECR Repositories
+# ClaritySeq — ECR Repositories
 # Three images: pipeline (GATK/DRAGMAP/VEP), beacon (FastAPI), daemon (Celery)
 # All repositories: IMMUTABLE tags (audit trail); vulnerability scanning on push
 
 resource "aws_ecr_repository" "pipeline" {
-  name                 = "genomeforge/pipeline"
+  name                 = "clarityseq/pipeline"
   image_tag_mutability = var.ecr_image_tag_mutability
 
   image_scanning_configuration {
@@ -15,11 +15,11 @@ resource "aws_ecr_repository" "pipeline" {
     kms_key         = aws_kms_key.s3.arn
   }
 
-  tags = { Name = "genomeforge-pipeline-ecr" }
+  tags = { Name = "clarityseq-pipeline-ecr" }
 }
 
 resource "aws_ecr_repository" "beacon" {
-  name                 = "genomeforge/beacon"
+  name                 = "clarityseq/beacon"
   image_tag_mutability = var.ecr_image_tag_mutability
 
   image_scanning_configuration {
@@ -31,11 +31,11 @@ resource "aws_ecr_repository" "beacon" {
     kms_key         = aws_kms_key.s3.arn
   }
 
-  tags = { Name = "genomeforge-beacon-ecr" }
+  tags = { Name = "clarityseq-beacon-ecr" }
 }
 
 resource "aws_ecr_repository" "daemon" {
-  name                 = "genomeforge/daemon"
+  name                 = "clarityseq/daemon"
   image_tag_mutability = var.ecr_image_tag_mutability
 
   image_scanning_configuration {
@@ -47,7 +47,7 @@ resource "aws_ecr_repository" "daemon" {
     kms_key         = aws_kms_key.s3.arn
   }
 
-  tags = { Name = "genomeforge-daemon-ecr" }
+  tags = { Name = "clarityseq-daemon-ecr" }
 }
 
 # ── Lifecycle policies: keep last 10 tagged images + remove untagged after 1 day ──

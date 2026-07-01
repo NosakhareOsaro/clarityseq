@@ -1,5 +1,5 @@
 ---
-title: 'GenomeForge: A DRAGEN-GATK Pangenome-Aware Clinical WGS Platform with
+title: 'ClaritySeq: A DRAGEN-GATK Pangenome-Aware Clinical WGS Platform with
   Bayesian ACMG Classification (ACGS 2024 v1.2) and Automated ClinVar
   Reclassification Monitoring'
 tags:
@@ -27,7 +27,7 @@ bibliography: paper.bib
 
 # Summary
 
-GenomeForge is a production-grade, research-novel whole-genome sequencing (WGS)
+ClaritySeq is a production-grade, research-novel whole-genome sequencing (WGS)
 clinical variant interpretation platform implementing seven novel contributions
 not present in any existing public pipeline. The platform integrates DRAGMAP +
 GATK4 DRAGEN-GATK variant calling with DeepVariant v1.8.0 ensemble calling,
@@ -59,7 +59,7 @@ ClinGen SVI-approved primary PP3/BP4 predictor replacing REVEL. Third, no
 existing public platform implements the NHS-mandated ClinVar submission workflow
 introduced in ACGS 2024 Introduction.
 
-GenomeForge addresses all three challenges while adding four further novel
+ClaritySeq addresses all three challenges while adding four further novel
 contributions: three-way benchmarking (GRCh38 vs T2T-CHM13 vs HPRC pangenome)
 on GIAB truth sets; GA4GH Beacon v2.1.1 federation with VRS v2.0; Phenopackets
 v2 + Exomiser 14 phenotype-driven prioritisation; and FHIR R4 Genomics Reporting

@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a reproducible bug in GenomeForge
+about: Report a reproducible bug in ClaritySeq
 title: "[BUG] "
 labels: bug
 assignees: ""
@@ -94,7 +94,7 @@ ERROR: paste full error output here, including stack trace if Python
 ## Environment
 
 ```
-GenomeForge version: v0.x.x  (from `git describe --tags`)
+ClaritySeq version: v0.x.x  (from `git describe --tags`)
 Python version:      3.12.x
 Nextflow version:    24.x.x  (from `nextflow -version`)
 Docker version:      xx.x.x  (from `docker --version`)

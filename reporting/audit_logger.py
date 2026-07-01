@@ -1,7 +1,7 @@
 """
 reporting.audit_logger
 ========================
-JSON-LD audit trail writer for GenomeForge clinical reports.
+JSON-LD audit trail writer for ClaritySeq clinical reports.
 
 JSON-LD provides a linked data representation of the audit record,
 suitable for FHIR Provenance resources and NHS GMS audit requirements.
@@ -48,15 +48,15 @@ _JSON_LD_CONTEXT: dict[str, Any] = {
     "prov": "http://www.w3.org/ns/prov#",
     "xsd": "http://www.w3.org/2001/XMLSchema#",
     "ga4gh": "https://ga4gh.org/terms/",
-    "genomeforge": "https://genomeforge.github.io/terms/",
+    "clarityseq": "https://clarityseq.github.io/terms/",
     "report_date": {"@type": "xsd:date"},
     "generated_at": {"@type": "xsd:dateTime"},
-    "pipeline_version": "genomeforge:pipelineVersion",
-    "classification_scheme": "genomeforge:classificationScheme",
-    "pm2_weight": "genomeforge:pm2Weight",
-    "vus_review_date": "genomeforge:vusReviewDate",
-    "pending_clinvar_submission": "genomeforge:pendingClinVarSubmission",
-    "posterior_p": "genomeforge:bayesianPosteriorP",
+    "pipeline_version": "clarityseq:pipelineVersion",
+    "classification_scheme": "clarityseq:classificationScheme",
+    "pm2_weight": "clarityseq:pm2Weight",
+    "vus_review_date": "clarityseq:vusReviewDate",
+    "pending_clinvar_submission": "clarityseq:pendingClinVarSubmission",
+    "posterior_p": "clarityseq:bayesianPosteriorP",
 }
 
 
@@ -87,17 +87,17 @@ def write_audit_log(
     json_ld: dict[str, Any] = {
         "@context": _JSON_LD_CONTEXT,
         "@type": "prov:Activity",
-        "@id": f"urn:genomeforge:audit:{audit_data.get('sample_id', 'unknown')}:{audit_data.get('report_date', '')}",
+        "@id": f"urn:clarityseq:audit:{audit_data.get('sample_id', 'unknown')}:{audit_data.get('report_date', '')}",
         "generated_at": now_iso,
         "report_date": audit_data.get("report_date", ""),
         "prov:wasAssociatedWith": {
             "@type": "prov:Agent",
-            "name": "GenomeForge",
+            "name": "ClaritySeq",
             "version": audit_data.get("pipeline_version", "unknown"),
-            "software": "https://github.com/genomeforge/genomeforge",
+            "software": "https://github.com/clarityseq/clarityseq",
         },
         "sample": {
-            "@type": "genomeforge:Sample",
+            "@type": "clarityseq:Sample",
             "patient_id": audit_data.get("patient_id", ""),
             "sample_id": audit_data.get("sample_id", ""),
         },
@@ -122,7 +122,7 @@ def write_audit_log(
         ),
         "variants": [
             {
-                "@type": "genomeforge:VariantClassification",
+                "@type": "clarityseq:VariantClassification",
                 "gene": v.get("gene", ""),
                 "transcript": v.get("transcript", ""),
                 "hgvsc": v.get("hgvsc", ""),
@@ -198,7 +198,7 @@ def append_audit_event(
 
     events: list[dict[str, Any]] = existing.setdefault("events", [])
     events.append({
-        "@type": f"genomeforge:{event_type}",
+        "@type": f"clarityseq:{event_type}",
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "data": event_data,
     })

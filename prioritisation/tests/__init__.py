@@ -1,1 +1,1 @@
-"""Tests for the GenomeForge prioritisation module."""
+"""Tests for the ClaritySeq prioritisation module."""

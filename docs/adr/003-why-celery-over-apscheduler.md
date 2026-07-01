@@ -2,14 +2,14 @@
 
 **Status:** Accepted  
 **Date:** 2026-06-22  
-**Deciders:** GenomeForge core team  
+**Deciders:** ClaritySeq core team  
 **Category:** Task scheduling / background processing
 
 ---
 
 ## Context
 
-GenomeForge includes a **ClinVar reclassification daemon** (`reclassification/daemon.py`)
+ClaritySeq includes a **ClinVar reclassification daemon** (`reclassification/daemon.py`)
 that:
 
 1. Downloads weekly ClinVar XML diffs every Monday
@@ -52,7 +52,7 @@ during a large ClinVar XML download), the task state is lost.
 
 ### 2. Redis 7 is already required for caching
 
-GenomeForge already uses Redis 7 for:
+ClaritySeq already uses Redis 7 for:
 - API response caching (Beacon v2.1.1 frequency queries)
 - ClinVar annotation caching (avoid repeated API calls)
 - FHIR server response caching

@@ -1,4 +1,4 @@
-"""NHS-mandated ClinVar submission client for GenomeForge.
+"""NHS-mandated ClinVar submission client for ClaritySeq.
 
 This module implements the NCBI ClinVar API submission pipeline as required
 by the NHS Genomic Medicine Service participation agreement.
@@ -54,9 +54,9 @@ NCBI_REQUEST_INTERVAL_WITHOUT_KEY = 0.35
 # ClinVar submission XML namespace
 CLINVAR_XML_NS = "http://www.ncbi.nlm.nih.gov/clinvar"
 
-# GenomeForge organisation identifiers for ClinVar
-GENOMEFORGE_ORG_ID = "507000"  # NCBI-assigned organisation ID (placeholder)
-GENOMEFORGE_ORG_NAME = "GenomeForge NHS WGS Laboratory"
+# ClaritySeq organisation identifiers for ClinVar
+CLARITYSEQ_ORG_ID = "507000"  # NCBI-assigned organisation ID (placeholder)
+CLARITYSEQ_ORG_NAME = "ClaritySeq NHS WGS Laboratory"
 
 # Mapping from internal significance to ClinVar controlled vocabulary
 SIGNIFICANCE_TO_CLINVAR: dict[str, str] = {
@@ -117,7 +117,7 @@ def _get_request_session(api_key: Optional[str] = None) -> requests.Session:
     headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "User-Agent": "GenomeForge-ClinVarSubmitter/1.0 (NHS WGS; contact@genomeforge.nhs.uk)",
+        "User-Agent": "ClaritySeq-ClinVarSubmitter/1.0 (NHS WGS; contact@clarityseq.nhs.uk)",
     }
     if api_key:
         headers["X-API-KEY"] = api_key
@@ -249,7 +249,7 @@ def build_submission_json(submission: ClinVarSubmissionQueue) -> dict[str, Any]:
                                     "id": "25741868",  # Richards et al. 2015
                                 },
                                 "localID": submission.variant_id,
-                                "localKey": f"genomeforge-{submission.id}",
+                                "localKey": f"clarityseq-{submission.id}",
                             }
                         ]
                     }
@@ -302,9 +302,9 @@ def build_submission_xml(submission: ClinVarSubmissionQueue) -> str:
 
     # Submission header
     header = SubElement(root, "SubmissionHeader")
-    SubElement(header, "OrganizationID").text = GENOMEFORGE_ORG_ID
-    SubElement(header, "OrganizationName").text = GENOMEFORGE_ORG_NAME
-    SubElement(header, "SubmissionName").text = f"genomeforge-{submission.id}"
+    SubElement(header, "OrganizationID").text = CLARITYSEQ_ORG_ID
+    SubElement(header, "OrganizationName").text = CLARITYSEQ_ORG_NAME
+    SubElement(header, "SubmissionName").text = f"clarityseq-{submission.id}"
 
     # Clinical assertion
     assertion = SubElement(root, "ClinicalAssertion")

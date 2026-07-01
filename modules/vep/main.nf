@@ -3,7 +3,7 @@
 // Description: Annotates ensemble-merged VCF with functional consequences,
 //              population frequencies, pathogenicity predictions, and clinical
 //              significance using Ensembl Variant Effect Predictor (VEP) v111.
-//              VEP is the primary annotation engine in GenomeForge, providing
+//              VEP is the primary annotation engine in ClaritySeq, providing
 //              transcript-level consequences using MANE Select as the canonical
 //              clinical transcript. Multiple plugins are loaded to support ACMG
 //              variant classification criteria (PP3, BP4, PM2, BA1, BS1, etc.).
@@ -39,7 +39,7 @@
 // TRANSCRIPT PICK ORDER (--pick_order):
 // =======================================
 // VEP can annotate variants against multiple transcripts. --pick selects ONE
-// canonical annotation per variant using a priority order. GenomeForge uses:
+// canonical annotation per variant using a priority order. ClaritySeq uses:
 //
 //   mane_select,mane_plus_clinical,canonical,appris,tsl,biotype,rank,length
 //
@@ -68,7 +68,7 @@
 //                 score ≤0.340 → BP4 (likely benign missense)
 //     0.340 < score < 0.564 → ambiguous (no code assigned)
 //     Cheng et al. 2023 Science PMID:37703350
-//     Note: GenomeForge also runs modules/alphamissense/main.nf independently
+//     Note: ClaritySeq also runs modules/alphamissense/main.nf independently
 //     for tabix lookup; this plugin provides the same scores via VEP output.
 //
 //   SpliceAI (splicing PP3/BP4/BP7):

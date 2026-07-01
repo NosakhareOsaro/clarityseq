@@ -78,14 +78,14 @@ class ReclassificationEvent(Base):
 
     Attributes:
         id: Auto-incremented primary key.
-        variant_id: Internal GenomeForge variant identifier (FK to variant
+        variant_id: Internal ClaritySeq variant identifier (FK to variant
             catalogue). Indexed for fast patient-variant lookups.
         old_class: Previous ClinVar clinical significance.
         new_class: Updated ClinVar clinical significance.
         clinvar_accession: ClinVar accession number (e.g. RCV000123456).
         clinvar_variation_id: ClinVar variation ID (integer, e.g. 12345).
         clinvar_date: Date the reclassification was published in ClinVar.
-        detected_at: Timestamp when the GenomeForge daemon first detected
+        detected_at: Timestamp when the ClaritySeq daemon first detected
             this reclassification.
         fhir_task_id: FHIR Task resource ID created for recontact workflow,
             populated after Task creation in fhir_task.py.
@@ -160,7 +160,7 @@ class ClinVarSubmissionQueue(Base):
 
     Attributes:
         id: Auto-incremented primary key.
-        variant_id: Internal GenomeForge variant identifier.
+        variant_id: Internal ClaritySeq variant identifier.
         gene_symbol: HGNC gene symbol (e.g. BRCA1).
         chromosome: Chromosome (e.g. '17', 'X').
         position_grch38: GRCh38 genomic position (1-based).
@@ -270,7 +270,7 @@ class PatientVariant(Base):
     Attributes:
         id: Auto-incremented primary key.
         patient_gms_id: NHS GMS pseudonymous patient identifier.
-        variant_id: Internal GenomeForge variant identifier.
+        variant_id: Internal ClaritySeq variant identifier.
         reclassification_event_id: FK to ReclassificationEvent if this
             patient-variant pair has been affected by a reclassification.
         current_classification: Classification at time of patient report.
@@ -343,7 +343,7 @@ class VUSReviewSchedule(Base):
 
     Attributes:
         id: Auto-incremented primary key.
-        variant_id: Internal GenomeForge variant identifier.
+        variant_id: Internal ClaritySeq variant identifier.
         patient_gms_id: Pseudonymous patient identifier (variant may be
             present in multiple patients; one schedule row per patient-variant
             pair to allow individual tracking).

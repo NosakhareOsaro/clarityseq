@@ -4,7 +4,7 @@
 //              DRAGEN-GATK mode. Operates in GVCF mode (-ERC GVCF) for joint
 //              genotyping across cohorts via GenomicsDBImport/GenotypGVCFs.
 //              Scattered by interval list for parallelism. This is the primary
-//              variant caller in the DRAGEN-GATK arm of GenomeForge.
+//              variant caller in the DRAGEN-GATK arm of ClaritySeq.
 // Guidelines: GATK DRAGEN-GATK Best Practices (2021+);
 //             ACGS Best Practice Guidelines v1.2 2024 §4;
 //             Van der Auwera & O'Connor "Genomics in the Cloud" (2020) Ch.11

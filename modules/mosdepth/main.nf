@@ -2,7 +2,7 @@
 // Module: MOSDEPTH_QC
 // Description: Computes per-base, per-window, and per-region coverage depth
 //              using Mosdepth v0.3.8. The primary clinical QC gate in the
-//              GenomeForge WGS pipeline: samples with mean WGS depth < 30×
+//              ClaritySeq WGS pipeline: samples with mean WGS depth < 30×
 //              are FAILED and excluded from variant calling to prevent
 //              downstream false negatives from insufficient coverage.
 //

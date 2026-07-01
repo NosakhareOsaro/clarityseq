@@ -4,7 +4,7 @@ Multi-ancestry VQSR model selection via somalier ancestry inference.
 
 ## Why per-ancestry VQSR?
 
-Variant quality score recalibration (VQSR) uses training variants from population databases. Using the wrong ancestry training set inflates false positive rates for underrepresented populations. GenomeForge uses somalier to infer ancestry, then selects the appropriate gnomAD v4.1 ancestry-stratified subset for VQSR training.
+Variant quality score recalibration (VQSR) uses training variants from population databases. Using the wrong ancestry training set inflates false positive rates for underrepresented populations. ClaritySeq uses somalier to infer ancestry, then selects the appropriate gnomAD v4.1 ancestry-stratified subset for VQSR training.
 
 ## Ancestry-to-VQSR mapping
 

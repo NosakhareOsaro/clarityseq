@@ -1,16 +1,16 @@
-# GenomeForge — IAM Roles and Policies
+# ClaritySeq — IAM Roles and Policies
 # Principle of least privilege: each service gets only what it needs.
 #
 # Roles:
-#   genomeforge-batch-job     — Nextflow pipeline jobs (S3 + ECR + Secrets Manager)
-#   genomeforge-batch-instance — EC2 instance profile for Batch compute
-#   genomeforge-ecs-task      — ECS Fargate tasks (Beacon API + Celery daemon)
-#   genomeforge-github-actions — OIDC role for GitHub Actions CI/CD
+#   clarityseq-batch-job     — Nextflow pipeline jobs (S3 + ECR + Secrets Manager)
+#   clarityseq-batch-instance — EC2 instance profile for Batch compute
+#   clarityseq-ecs-task      — ECS Fargate tasks (Beacon API + Celery daemon)
+#   clarityseq-github-actions — OIDC role for GitHub Actions CI/CD
 
 # ── Batch job role ────────────────────────────────────────────────────────────
 resource "aws_iam_role" "batch_job" {
-  name        = "genomeforge-batch-job"
-  description = "IAM role for GenomeForge Nextflow pipeline Batch jobs"
+  name        = "clarityseq-batch-job"
+  description = "IAM role for ClaritySeq Nextflow pipeline Batch jobs"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -23,7 +23,7 @@ resource "aws_iam_role" "batch_job" {
 }
 
 resource "aws_iam_role_policy" "batch_job_s3" {
-  name = "genomeforge-batch-s3"
+  name = "clarityseq-batch-s3"
   role = aws_iam_role.batch_job.id
 
   policy = jsonencode({
@@ -64,7 +64,7 @@ resource "aws_iam_role_policy_attachment" "batch_job_ecr" {
 
 # ── Batch instance profile ────────────────────────────────────────────────────
 resource "aws_iam_role" "batch_instance" {
-  name = "genomeforge-batch-instance"
+  name = "clarityseq-batch-instance"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -82,13 +82,13 @@ resource "aws_iam_role_policy_attachment" "batch_instance_ecs" {
 }
 
 resource "aws_iam_instance_profile" "batch" {
-  name = "genomeforge-batch"
+  name = "clarityseq-batch"
   role = aws_iam_role.batch_instance.name
 }
 
 # ── ECS task role (Beacon API + Celery daemon) ────────────────────────────────
 resource "aws_iam_role" "ecs_task" {
-  name        = "genomeforge-ecs-task"
+  name        = "clarityseq-ecs-task"
   description = "IAM role for ECS Fargate tasks (Beacon API + Celery daemon)"
 
   assume_role_policy = jsonencode({
@@ -102,7 +102,7 @@ resource "aws_iam_role" "ecs_task" {
 }
 
 resource "aws_iam_role_policy" "ecs_task_secrets" {
-  name = "genomeforge-ecs-secrets"
+  name = "clarityseq-ecs-secrets"
   role = aws_iam_role.ecs_task.id
 
   policy = jsonencode({
@@ -131,7 +131,7 @@ resource "aws_iam_role_policy" "ecs_task_secrets" {
 
 # ECS execution role (pulls images from ECR, writes logs to CloudWatch)
 resource "aws_iam_role" "ecs_execution" {
-  name = "genomeforge-ecs-execution"
+  name = "clarityseq-ecs-execution"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -155,8 +155,8 @@ data "aws_iam_openid_connect_provider" "github" {
 }
 
 resource "aws_iam_role" "github_actions" {
-  name        = "genomeforge-github-actions"
-  description = "GitHub Actions OIDC role for GenomeForge CI/CD"
+  name        = "clarityseq-github-actions"
+  description = "GitHub Actions OIDC role for ClaritySeq CI/CD"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -171,8 +171,8 @@ resource "aws_iam_role" "github_actions" {
           "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
         }
         StringLike = {
-          # Restrict to the GenomeForge repository only
-          "token.actions.githubusercontent.com:sub" = "repo:genomeforge/genomeforge:*"
+          # Restrict to the ClaritySeq repository only
+          "token.actions.githubusercontent.com:sub" = "repo:clarityseq/clarityseq:*"
         }
       }
     }]
@@ -180,7 +180,7 @@ resource "aws_iam_role" "github_actions" {
 }
 
 resource "aws_iam_role_policy" "github_actions_ecr" {
-  name = "genomeforge-github-ecr-push"
+  name = "clarityseq-github-ecr-push"
   role = aws_iam_role.github_actions.id
 
   policy = jsonencode({

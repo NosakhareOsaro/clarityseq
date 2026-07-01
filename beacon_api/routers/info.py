@@ -28,34 +28,34 @@ router = APIRouter(prefix="/info")
 # ---------------------------------------------------------------------------
 
 _BEACON_INFO: dict[str, Any] = {
-    "id": "org.genomeforge.beacon",
-    "name": "GenomeForge Genomic Beacon",
+    "id": "org.clarityseq.beacon",
+    "name": "ClaritySeq Genomic Beacon",
     "apiVersion": "v2.1.1",
     "environment": "prod",
     "organization": {
-        "id": "org.genomeforge",
-        "name": "GenomeForge",
+        "id": "org.clarityseq",
+        "name": "ClaritySeq",
         "description": "NHS GMS-compliant clinical whole-genome sequencing pipeline.",
         "address": "United Kingdom",
-        "welcomeUrl": "https://github.com/genomeforge/genomeforge",
-        "contactUrl": "https://github.com/genomeforge/genomeforge/issues",
-        "logoUrl": "https://github.com/genomeforge/genomeforge/logo.png",
+        "welcomeUrl": "https://github.com/clarityseq/clarityseq",
+        "contactUrl": "https://github.com/clarityseq/clarityseq/issues",
+        "logoUrl": "https://github.com/clarityseq/clarityseq/logo.png",
     },
     "description": (
-        "GenomeForge GA4GH Beacon v2.1.1 providing access to variant-level "
+        "ClaritySeq GA4GH Beacon v2.1.1 providing access to variant-level "
         "genomic data from NHS GMS whole-genome sequencing. "
         "Variant identifiers use VRS v2.0 (Wagner et al. 2021 PMID:35072137). "
         "Population frequency from gnomAD v4.1 (April 2024, 807,162 individuals)."
     ),
     "version": "2.1.1",
-    "welcomeUrl": "https://github.com/genomeforge/genomeforge",
+    "welcomeUrl": "https://github.com/clarityseq/clarityseq",
     "alternativeUrl": None,
     "createDateTime": "2024-12-13T00:00:00Z",
     "updateDateTime": datetime.now(timezone.utc).isoformat(),
     "datasets": [
         {
-            "id": "genomeforge.wgs.grch38",
-            "name": "GenomeForge WGS GRCh38",
+            "id": "clarityseq.wgs.grch38",
+            "name": "ClaritySeq WGS GRCh38",
             "description": (
                 "Whole-genome sequencing variants on GRCh38 reference assembly. "
                 "Called with DRAGEN-GATK 4.6.0.0. "

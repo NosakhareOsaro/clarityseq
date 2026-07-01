@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 // ============================================================================
-// GenomeForge — Mitochondrial Sub-Workflow
+// ClaritySeq — Mitochondrial Sub-Workflow
 // ============================================================================
 // Implements ACGS 2024 v1.2 §6: "Classifying variants in the mitochondrial genome"
 //

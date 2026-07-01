@@ -1,6 +1,6 @@
 #!/usr/bin/env nextflow
 // ============================================================================
-// GenomeForge — T2T-CHM13 v2.0 Pipeline Arm (Stub)
+// ClaritySeq — T2T-CHM13 v2.0 Pipeline Arm (Stub)
 // ============================================================================
 // Aligns short Illumina reads to T2T-CHM13 v2.0 (Telomere-to-Telomere
 // complete human genome assembly) and lifts over variants to GRCh38
@@ -64,7 +64,7 @@ workflow WGS_T2T {
 
     main:
         // ── STUB: T2T arm not yet implemented ──────────────────────────────
-        // TODO(genomeforge v2.0): Implement T2T alignment arm
+        // TODO(clarityseq v2.0): Implement T2T alignment arm
         //
         // Planned steps:
         //   STEP 1: BWA_MEM2_ALIGN with T2T-CHM13 v2.0 reference
@@ -73,7 +73,7 @@ workflow WGS_T2T {
         //   STEP 4: CrossMap VCF liftover T2T → GRCh38
         //   STEP 5: Merge with primary GRCh38 arm VCF
         //
-        // Tracked in: https://github.com/genomeforge/genomeforge/issues/T2T-ARM
+        // Tracked in: https://github.com/clarityseq/clarityseq/issues/T2T-ARM
 
         log.warn "WGS_T2T is a stub — T2T arm not yet implemented. " +
                  "Set params.run_t2t = false to suppress this warning."

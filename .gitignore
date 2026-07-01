@@ -1,5 +1,5 @@
 # =============================================================================
-# GenomeForge .gitignore
+# ClaritySeq .gitignore
 # =============================================================================
 # Comprehensive ignore list for genomics pipeline, Python, Terraform, and secrets.
 # Never commit raw genomic data, credentials, or large binary files.

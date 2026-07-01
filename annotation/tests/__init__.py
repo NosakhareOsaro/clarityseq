@@ -1,1 +1,1 @@
-"""Tests for the GenomeForge annotation stack."""
+"""Tests for the ClaritySeq annotation stack."""

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run hap.py benchmarking against GIAB truth sets.
 
-Wraps hap.py v0.3.15 for automated CI benchmarking of GenomeForge variant calls
+Wraps hap.py v0.3.15 for automated CI benchmarking of ClaritySeq variant calls
 against GIAB HG001 (NA12878) chr22 truth set v4.2.1 (NIST).
 
 ACGS 2024 §3.1 validation thresholds (CI acceptance criteria):

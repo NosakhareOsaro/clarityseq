@@ -1,7 +1,7 @@
 """
 multi_ancestry
 ==============
-Multi-ancestry analysis module for GenomeForge.
+Multi-ancestry analysis module for ClaritySeq.
 
 Handles ancestry inference, population label assignment for admixed samples,
 and selection of gnomAD v4.1 ancestry-stratified VQSR training sets.

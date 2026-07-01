@@ -5,7 +5,7 @@ Convert Phenopackets v2.0 HPO terms to variant filter parameters.
 
 Phenopackets encode patient phenotypes as HPO term arrays.  This module
 converts those HPO terms into structured variant prioritisation parameters
-for the GenomeForge prioritisation pipeline.
+for the ClaritySeq prioritisation pipeline.
 
 HPO (Human Phenotype Ontology):
     https://hpo.jax.org/

@@ -2,14 +2,14 @@
 
 **Status:** Accepted  
 **Date:** 2026-06-22  
-**Deciders:** GenomeForge core team  
+**Deciders:** ClaritySeq core team  
 **Category:** Pangenome alignment
 
 ---
 
 ## Context
 
-GenomeForge includes a pangenome alignment arm (`run_pangenome=true`) that aligns
+ClaritySeq includes a pangenome alignment arm (`run_pangenome=true`) that aligns
 Illumina WGS reads to the HPRC v1.1 pangenome graph. Two `vg` alignment algorithms
 were evaluated:
 
@@ -21,7 +21,7 @@ were evaluated:
 
 ## Decision
 
-**vg giraffe is the pangenome aligner for GenomeForge.**
+**vg giraffe is the pangenome aligner for ClaritySeq.**
 
 ---
 

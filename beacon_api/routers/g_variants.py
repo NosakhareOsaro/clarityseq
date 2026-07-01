@@ -235,7 +235,7 @@ async def query_g_variants(
         "responseSummary": {"exists": total > 0, "numTotalResults": total},
         "resultSets": [
             {
-                "id": "genomeforge.wgs.grch38",
+                "id": "clarityseq.wgs.grch38",
                 "type": "dataset",
                 "exists": total > 0,
                 "resultsCount": len(results),
@@ -256,7 +256,7 @@ def _beacon_meta(entity_type: str) -> dict[str, Any]:
         Dict with ``beaconId``, ``apiVersion``, and ``returnedSchemas``.
     """
     return {
-        "beaconId": "org.genomeforge.beacon",
+        "beaconId": "org.clarityseq.beacon",
         "apiVersion": "v2.1.1",
         "returnedSchemas": [
             {

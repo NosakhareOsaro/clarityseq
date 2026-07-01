@@ -1,17 +1,17 @@
-# GenomeForge Reclassification Daemon Image
+# ClaritySeq Reclassification Daemon Image
 # Celery + Redis 7 — weekly ClinVar diff + VUS recontact notifications
 # ACGS 2024 §9: VUS must be re-evaluated every 18 months minimum
 # NHS mandate: submit novel P/LP to ClinVar (ACGS 2024 Introduction)
 #
-# Build: docker build -f docker/Dockerfile.daemon -t genomeforge/daemon:latest .
-# Verify: docker run --rm genomeforge/daemon:latest celery --version
+# Build: docker build -f docker/Dockerfile.daemon -t clarityseq/daemon:latest .
+# Verify: docker run --rm clarityseq/daemon:latest celery --version
 #
 # Hadolint: hadolint docker/Dockerfile.daemon
 
 FROM python:3.12-slim AS base
 
-LABEL maintainer="GenomeForge Team <genomeforge@noreply.github.com>" \
-      org.opencontainers.image.title="GenomeForge Reclassification Daemon" \
+LABEL maintainer="ClaritySeq Team <clarityseq@noreply.github.com>" \
+      org.opencontainers.image.title="ClaritySeq Reclassification Daemon" \
       org.opencontainers.image.description="Celery worker: ClinVar diff + VUS recontact (ACGS 2024 §9)" \
       org.opencontainers.image.version="0.1.0" \
       org.opencontainers.image.licenses="MIT"

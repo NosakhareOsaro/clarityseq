@@ -53,7 +53,7 @@
 //   beyond 100 pixels. Using 2500 on HiSeq would falsely flag legitimate
 //   independent clusters as optical duplicates (under-calling true variants).
 //
-// GenomeForge defaults to 2500 (NovaSeq assumed). Change via:
+// ClaritySeq defaults to 2500 (NovaSeq assumed). Change via:
 //   params.optical_duplicate_pixel_distance = 100  # for HiSeq
 //
 

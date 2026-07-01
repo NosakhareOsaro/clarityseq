@@ -73,7 +73,7 @@ class TestBeaconVariant:
             clinvar_classification="Pathogenic",
             acmg_class="Pathogenic",
             bayesian_posterior_p=0.999,
-            dataset_id="genomeforge.wgs.grch38",
+            dataset_id="clarityseq.wgs.grch38",
             extra={"alphamissense": 0.9},
         )
         assert variant.id == variant_id
@@ -146,7 +146,7 @@ class TestBeaconIndividual:
             ethnicity_id="HANCESTRO:0004",
             phenotypic_features=[{"hpo_id": "HP:0001250", "label": "Seizure"}],
             diseases=[{"omim_id": "OMIM:114480", "label": "Breast cancer"}],
-            dataset_id="genomeforge.wgs.grch38",
+            dataset_id="clarityseq.wgs.grch38",
         )
         assert individual.sex == "FEMALE"
         assert individual.phenotypic_features[0]["hpo_id"] == "HP:0001250"
@@ -170,15 +170,15 @@ class TestBeaconDataset:
 
     def test_construction_with_required_fields(self) -> None:
         """BeaconDataset can be constructed with id and name."""
-        dataset = BeaconDataset(id="genomeforge.wgs.grch38", name="GenomeForge WGS GRCh38")
-        assert dataset.id == "genomeforge.wgs.grch38"
-        assert dataset.name == "GenomeForge WGS GRCh38"
+        dataset = BeaconDataset(id="clarityseq.wgs.grch38", name="ClaritySeq WGS GRCh38")
+        assert dataset.id == "clarityseq.wgs.grch38"
+        assert dataset.name == "ClaritySeq WGS GRCh38"
 
     def test_construction_with_all_fields(self) -> None:
         """BeaconDataset accepts full metadata including counts and visibility."""
         dataset = BeaconDataset(
-            id="genomeforge.wgs.grch38",
-            name="GenomeForge WGS GRCh38",
+            id="clarityseq.wgs.grch38",
+            name="ClaritySeq WGS GRCh38",
             description="Whole genome sequencing cohort",
             assembly_id="GRCh38",
             variant_count=1000,

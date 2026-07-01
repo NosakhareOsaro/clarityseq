@@ -26,15 +26,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from beacon_api.routers import info, g_variants, individuals
 
 app = FastAPI(
-    title="GenomeForge Beacon API",
+    title="ClaritySeq Beacon API",
     description=(
         "GA4GH Beacon v2.1.1 with VRS v2.0 identifiers. "
         "Implements the Beacon v2 specification (December 13, 2024)."
     ),
     version="2.1.1",
     contact={
-        "name": "GenomeForge",
-        "url": "https://github.com/genomeforge/genomeforge",
+        "name": "ClaritySeq",
+        "url": "https://github.com/clarityseq/clarityseq",
     },
     license_info={
         "name": "Apache 2.0",

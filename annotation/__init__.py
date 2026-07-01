@@ -1,5 +1,5 @@
 """
-annotation — Variant annotation stack for GenomeForge WGS platform.
+annotation — Variant annotation stack for ClaritySeq WGS platform.
 
 Provides unified access to:
 - VEP v111 with MANE Select transcript prioritisation (Morales et al. 2022 PMID:35356062)

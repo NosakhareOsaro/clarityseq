@@ -1,4 +1,4 @@
-# GenomeForge — RDS PostgreSQL 16 (db.t4g.micro)
+# ClaritySeq — RDS PostgreSQL 16 (db.t4g.micro)
 #
 # Cost rationale:
 #   db.t4g.micro on Graviton2 ARM processor:  ~$0.016/hr ($11.50/month)
@@ -16,18 +16,18 @@
 
 # ── Subnet group (Multi-AZ) ───────────────────────────────────────────────────
 resource "aws_db_subnet_group" "main" {
-  name        = "genomeforge-rds-subnet-group"
-  description = "Private subnets for GenomeForge PostgreSQL 16"
+  name        = "clarityseq-rds-subnet-group"
+  description = "Private subnets for ClaritySeq PostgreSQL 16"
   subnet_ids  = aws_subnet.private[*].id
 
-  tags = { Name = "genomeforge-rds-subnet-group" }
+  tags = { Name = "clarityseq-rds-subnet-group" }
 }
 
 # ── Parameter group (PostgreSQL 16 tuning) ────────────────────────────────────
 resource "aws_db_parameter_group" "postgres16" {
-  name        = "genomeforge-postgres16"
+  name        = "clarityseq-postgres16"
   family      = "postgres16"
-  description = "GenomeForge PostgreSQL 16 parameters"
+  description = "ClaritySeq PostgreSQL 16 parameters"
 
   # Optimise for t4g.micro (1 GB RAM): reduce shared_buffers from default 128 MB
   parameter {
@@ -48,16 +48,16 @@ resource "aws_db_parameter_group" "postgres16" {
     value = "0.05"  # Vacuum when 5% of rows are dead (more aggressive than default 20%)
   }
 
-  tags = { Name = "genomeforge-postgres16-params" }
+  tags = { Name = "clarityseq-postgres16-params" }
 }
 
 # ── Master password (Secrets Manager) ────────────────────────────────────────
 resource "aws_secretsmanager_secret" "db_password" {
-  name                    = "genomeforge/db/password"
-  description             = "GenomeForge PostgreSQL 16 admin password"
+  name                    = "clarityseq/db/password"
+  description             = "ClaritySeq PostgreSQL 16 admin password"
   recovery_window_in_days = 7  # 7-day recovery window before deletion
 
-  tags = { Name = "genomeforge-db-password" }
+  tags = { Name = "clarityseq-db-password" }
 }
 
 resource "aws_secretsmanager_secret_version" "db_password" {
@@ -73,7 +73,7 @@ resource "aws_secretsmanager_secret_version" "db_password" {
 
 # ── RDS instance ──────────────────────────────────────────────────────────────
 resource "aws_db_instance" "main" {
-  identifier     = "genomeforge-postgres16"
+  identifier     = "clarityseq-postgres16"
   engine         = "postgres"
   engine_version = "16.4"  # PostgreSQL 16 LTS
 
@@ -111,7 +111,7 @@ resource "aws_db_instance" "main" {
   performance_insights_enabled          = true
   performance_insights_retention_period = 7
 
-  tags = { Name = "genomeforge-postgres16" }
+  tags = { Name = "clarityseq-postgres16" }
 
   lifecycle {
     # Prevent accidental deletion of the database
@@ -121,7 +121,7 @@ resource "aws_db_instance" "main" {
 
 # ── IAM role for Enhanced Monitoring ─────────────────────────────────────────
 resource "aws_iam_role" "rds_monitoring" {
-  name = "genomeforge-rds-monitoring"
+  name = "clarityseq-rds-monitoring"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"

@@ -1,13 +1,13 @@
 """
-Sphinx configuration for GenomeForge documentation.
+Sphinx configuration for ClaritySeq documentation.
 
 Builds autodoc from Python docstrings (Google style via napoleon),
 Mermaid diagrams via sphinxcontrib-mermaid, and furo theme.
 """
 
-project = "GenomeForge"
-copyright = "2026, GenomeForge Contributors"
-author = "GenomeForge Contributors"
+project = "ClaritySeq"
+copyright = "2026, ClaritySeq Contributors"
+author = "ClaritySeq Contributors"
 release = "0.1.0"
 
 extensions = [

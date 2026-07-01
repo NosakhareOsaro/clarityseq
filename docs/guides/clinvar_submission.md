@@ -1,6 +1,6 @@
 # ClinVar Submission Workflow
 
-GenomeForge automates NHS-mandated ClinVar submission for novel P/LP variants.
+ClaritySeq automates NHS-mandated ClinVar submission for novel P/LP variants.
 
 ## Regulatory basis
 

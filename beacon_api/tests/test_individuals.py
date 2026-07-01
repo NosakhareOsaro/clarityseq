@@ -200,7 +200,7 @@ class TestIndividualsQuery:
         client, _claims = authed_client
         response = client.get("/individuals", params={"phenotypeId": "HP:0001250"})
         data = response.json()
-        assert data["meta"]["beaconId"] == "org.genomeforge.beacon"
+        assert data["meta"]["beaconId"] == "org.clarityseq.beacon"
         assert data["meta"]["apiVersion"] == "v2.1.1"
         assert data["meta"]["returnedSchemas"][0]["entityType"] == "individuals"
 

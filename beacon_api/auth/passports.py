@@ -66,7 +66,7 @@ _ALLOWED_ISSUERS: list[str] = [
 # Expected audience claim value (the Beacon's identifier)
 _EXPECTED_AUDIENCE: str = os.getenv(
     "PASSPORT_EXPECTED_AUDIENCE",
-    "org.genomeforge.beacon",
+    "org.clarityseq.beacon",
 )
 
 _JWKS_CACHE_TTL_SECONDS = 3600  # 1-hour JWKS key cache TTL

@@ -1,4 +1,4 @@
-# GenomeForge — S3 Buckets (AWS provider v5)
+# ClaritySeq — S3 Buckets (AWS provider v5)
 #
 # IMPORTANT: AWS provider v5 breaking change —
 #   aws_s3_bucket_acl REMOVED. Use aws_s3_bucket_ownership_controls instead.
@@ -6,24 +6,24 @@
 #   All access controlled via bucket policies and IAM only.
 #
 # Buckets:
-#   1. genomeforge-results    — pipeline output VCFs, reports, BAMs (clinical data)
-#   2. genomeforge-reference  — DRAGMAP index, gnomAD v4.1, VEP cache v111
-#   3. genomeforge-clinvar    — Weekly ClinVar diff cache (Celery daemon)
+#   1. clarityseq-results    — pipeline output VCFs, reports, BAMs (clinical data)
+#   2. clarityseq-reference  — DRAGMAP index, gnomAD v4.1, VEP cache v111
+#   3. clarityseq-clinvar    — Weekly ClinVar diff cache (Celery daemon)
 #
 # All buckets: encryption at rest (SSE-S3 or SSE-KMS), versioning on,
 #              public access blocked, lifecycle rules to reduce cost.
 
 # ── KMS key for clinical data encryption ─────────────────────────────────────
 resource "aws_kms_key" "s3" {
-  description             = "GenomeForge S3 encryption key (clinical genomic data)"
+  description             = "ClaritySeq S3 encryption key (clinical genomic data)"
   deletion_window_in_days = 10
   enable_key_rotation     = true  # Annual rotation
 
-  tags = { Name = "genomeforge-s3-kms" }
+  tags = { Name = "clarityseq-s3-kms" }
 }
 
 resource "aws_kms_alias" "s3" {
-  name          = "alias/genomeforge-s3"
+  name          = "alias/clarityseq-s3"
   target_key_id = aws_kms_key.s3.key_id
 }
 

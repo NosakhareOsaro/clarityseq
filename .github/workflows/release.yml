@@ -1,4 +1,4 @@
-# GenomeForge Release Workflow
+# ClaritySeq Release Workflow
 #
 # Triggered by version tags (v*.*.*).
 # Builds and pushes all Docker images to GHCR.
@@ -57,7 +57,7 @@ jobs:
           labels: |
             org.opencontainers.image.version=${{ steps.version.outputs.VERSION }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
-            org.opencontainers.image.title=GenomeForge Pipeline
+            org.opencontainers.image.title=ClaritySeq Pipeline
             org.opencontainers.image.description=DRAGEN-GATK WGS clinical interpretation pipeline
 
       - name: Build and push beacon image
@@ -98,7 +98,7 @@ jobs:
             bayesacmg/dist/*.whl
             bayesacmg/dist/*.tar.gz
           body: |
-            ## GenomeForge ${{ steps.version.outputs.VERSION }}
+            ## ClaritySeq ${{ steps.version.outputs.VERSION }}
 
             ### Stack
             - DRAGEN-GATK 4.6.0.0 · DeepVariant 1.8.0 · VEP v111

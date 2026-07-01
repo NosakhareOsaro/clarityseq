@@ -1,1 +1,1 @@
-"""Tests for the GenomeForge PGx (pharmacogenomics) module."""
+"""Tests for the ClaritySeq PGx (pharmacogenomics) module."""

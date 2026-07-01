@@ -11,7 +11,7 @@ Version: 0.1.0
 """
 
 __version__ = "0.1.0"
-__author__ = "GenomeForge"
+__author__ = "ClaritySeq"
 __license__ = "MIT"
 
 from bayesacmg.models import (

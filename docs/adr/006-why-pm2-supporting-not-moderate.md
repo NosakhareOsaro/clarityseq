@@ -8,13 +8,13 @@
 
 ## Context
 
-PM2 (absent from/extremely rare in population databases) was defined in Richards et al. 2015 (PMID:25741868) as a Moderate pathogenicity criterion (2 points in the Tavtigian 2020 scoring system). GenomeForge must decide which weight to apply.
+PM2 (absent from/extremely rare in population databases) was defined in Richards et al. 2015 (PMID:25741868) as a Moderate pathogenicity criterion (2 points in the Tavtigian 2020 scoring system). ClaritySeq must decide which weight to apply.
 
 The ClinGen SVI Working Group published 2024 guidance recommending that PM2 be applied at **Supporting strength (1 pt)** in most contexts, citing evidence from gnomAD v4.1.
 
 ## Decision
 
-**PM2 is applied at Supporting weight (1 point) by default in GenomeForge.**
+**PM2 is applied at Supporting weight (1 point) by default in ClaritySeq.**
 
 VCEP gene-specific specifications may override this to Moderate (2 pts) for specific gene-disease pairs. Check `bayesacmg/src/bayesacmg/vcep_client.py` before every PM2 application.
 
@@ -44,7 +44,7 @@ The PM2 downgrade from Moderate (2 pts) to Supporting (1 pt) reduces the score f
 **After (ACGS 2024)**:
 - PVS1 (8) + PM2_Supporting (1) = 9 pts → Still Likely Pathogenic (threshold ≥ 6 pts)
 
-GenomeForge implements the ClinGen SVI 2024 explicit combination: `PVS1 + PM2_Supporting = LP` at 9 pts, preserving LP classification for novel LoF variants in LoF-mechanism genes where rarity is the only secondary evidence. See `bayesacmg/src/bayesacmg/combinations.py`.
+ClaritySeq implements the ClinGen SVI 2024 explicit combination: `PVS1 + PM2_Supporting = LP` at 9 pts, preserving LP classification for novel LoF variants in LoF-mechanism genes where rarity is the only secondary evidence. See `bayesacmg/src/bayesacmg/combinations.py`.
 
 ## Consequences
 

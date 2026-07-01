@@ -1,1 +1,1 @@
-"""Tests for the GenomeForge phenopackets_input module."""
+"""Tests for the ClaritySeq phenopackets_input module."""

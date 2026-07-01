@@ -4,7 +4,7 @@
 //              v2.2.1 against a GRCh38 FASTA index. This module is ONLY
 //              activated when running with -profile bwa_mem2 (e.g., when a
 //              DRAGMAP hash-table reference is unavailable). The default
-//              GenomeForge pipeline uses DRAGMAP. Unlike DRAGMAP, BWA-MEM2
+//              ClaritySeq pipeline uses DRAGMAP. Unlike DRAGMAP, BWA-MEM2
 //              alignment REQUIRES BQSR downstream — see GATK4_APPLYBQSR module.
 // Guidelines: GATK Best Practices (pre-DRAGEN era, still valid for BWA);
 //             Li & Durbin 2009 (BWA-MEM) extended to AVX512 in BWA-MEM2;
@@ -32,7 +32,7 @@
 // FALLBACK ALIGNER — only activated with -profile bwa_mem2
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //
-// The DEFAULT GenomeForge pipeline uses DRAGMAP (modules/dragmap/main.nf).
+// The DEFAULT ClaritySeq pipeline uses DRAGMAP (modules/dragmap/main.nf).
 // Use this module ONLY when:
 //   a) A DRAGMAP hash table has not been built for your reference, OR
 //   b) You are running on infrastructure that cannot build the hash table

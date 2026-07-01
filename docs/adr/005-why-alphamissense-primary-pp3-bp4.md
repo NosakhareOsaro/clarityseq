@@ -14,11 +14,11 @@ The ClinGen Sequence Variant Interpretation (SVI) working group approved four co
 3. BayesDel (Feng et al. 2017 PMID:28324717)
 4. CADD PHRED (Kircher et al. 2014 PMID:24487276)
 
-GenomeForge must select a primary tool and specify clear thresholds.
+ClaritySeq must select a primary tool and specify clear thresholds.
 
 ## Decision
 
-**AlphaMissense is the primary PP3/BP4 predictor in GenomeForge.**
+**AlphaMissense is the primary PP3/BP4 predictor in ClaritySeq.**
 
 Thresholds (ClinGen SVI 2024 calibration):
 - AM score ≥ 0.564 → PP3 (Supporting Pathogenic)
@@ -43,7 +43,7 @@ REVEL, BayesDel, and CADD are retained in dbNSFP v4.7 output as secondary compar
 
 ### Why not use REVEL as primary?
 
-REVEL was the de facto primary tool in GenomeForge's predecessor pipelines (ACGS 2020 era). It remains valid under ClinGen SVI 2024 but is outperformed by AlphaMissense on every benchmark measure. Retaining REVEL as primary would be a missed opportunity to use the most accurate approved tool.
+REVEL was the de facto primary tool in ClaritySeq's predecessor pipelines (ACGS 2020 era). It remains valid under ClinGen SVI 2024 but is outperformed by AlphaMissense on every benchmark measure. Retaining REVEL as primary would be a missed opportunity to use the most accurate approved tool.
 
 ### Ambiguous range
 

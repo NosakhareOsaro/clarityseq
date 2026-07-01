@@ -1,4 +1,4 @@
-# GenomeForge — Terraform Root Module
+# ClaritySeq — Terraform Root Module
 # AWS provider v5.x (REQUIRED: v4→v5 breaking changes)
 # Breaking change: aws_s3_bucket_acl removed — use aws_s3_bucket_ownership_controls
 # Breaking change: AWS provider ≥5.0 requires Terraform ≥1.5.0
@@ -31,11 +31,11 @@ terraform {
 
   # Remote state — use S3 backend in production
   # backend "s3" {
-  #   bucket         = "genomeforge-tfstate"
-  #   key            = "genomeforge/terraform.tfstate"
+  #   bucket         = "clarityseq-tfstate"
+  #   key            = "clarityseq/terraform.tfstate"
   #   region         = "us-east-1"
   #   encrypt        = true
-  #   dynamodb_table = "genomeforge-tfstate-lock"
+  #   dynamodb_table = "clarityseq-tfstate-lock"
   # }
 }
 
@@ -44,7 +44,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Project     = "GenomeForge"
+      Project     = "ClaritySeq"
       Environment = var.environment
       ManagedBy   = "Terraform"
     }
@@ -61,12 +61,12 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true
   enable_dns_hostnames = true
 
-  tags = { Name = "genomeforge-vpc" }
+  tags = { Name = "clarityseq-vpc" }
 }
 
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
-  tags   = { Name = "genomeforge-igw" }
+  tags   = { Name = "clarityseq-igw" }
 }
 
 resource "aws_subnet" "private" {
@@ -75,7 +75,7 @@ resource "aws_subnet" "private" {
   cidr_block        = var.private_subnet_cidrs[count.index]
   availability_zone = var.availability_zones[count.index]
 
-  tags = { Name = "genomeforge-private-${count.index + 1}" }
+  tags = { Name = "clarityseq-private-${count.index + 1}" }
 }
 
 resource "aws_subnet" "public" {
@@ -85,19 +85,19 @@ resource "aws_subnet" "public" {
   availability_zone       = var.availability_zones[count.index]
   map_public_ip_on_launch = false  # Never auto-assign public IPs
 
-  tags = { Name = "genomeforge-public-${count.index + 1}" }
+  tags = { Name = "clarityseq-public-${count.index + 1}" }
 }
 
 # NAT Gateway for private subnet outbound (reference data downloads)
 resource "aws_eip" "nat" {
   domain = "vpc"
-  tags   = { Name = "genomeforge-nat-eip" }
+  tags   = { Name = "clarityseq-nat-eip" }
 }
 
 resource "aws_nat_gateway" "main" {
   allocation_id = aws_eip.nat.id
   subnet_id     = aws_subnet.public[0].id
-  tags          = { Name = "genomeforge-nat" }
+  tags          = { Name = "clarityseq-nat" }
   depends_on    = [aws_internet_gateway.main]
 }
 
@@ -107,7 +107,7 @@ resource "aws_route_table" "private" {
     cidr_block     = "0.0.0.0/0"
     nat_gateway_id = aws_nat_gateway.main.id
   }
-  tags = { Name = "genomeforge-rt-private" }
+  tags = { Name = "clarityseq-rt-private" }
 }
 
 resource "aws_route_table_association" "private" {
@@ -118,7 +118,7 @@ resource "aws_route_table_association" "private" {
 
 # ── Security Groups ───────────────────────────────────────────────────────────
 resource "aws_security_group" "batch" {
-  name        = "genomeforge-batch"
+  name        = "clarityseq-batch"
   description = "AWS Batch compute environment (WGS pipeline workers)"
   vpc_id      = aws_vpc.main.id
 
@@ -130,11 +130,11 @@ resource "aws_security_group" "batch" {
     description = "Allow all outbound (reference data + S3 + ECR)"
   }
 
-  tags = { Name = "genomeforge-batch-sg" }
+  tags = { Name = "clarityseq-batch-sg" }
 }
 
 resource "aws_security_group" "rds" {
-  name        = "genomeforge-rds"
+  name        = "clarityseq-rds"
   description = "PostgreSQL 16 (BayesACMG results + VUS tracking)"
   vpc_id      = aws_vpc.main.id
 
@@ -146,11 +146,11 @@ resource "aws_security_group" "rds" {
     description     = "PostgreSQL from Batch workers and ECS services"
   }
 
-  tags = { Name = "genomeforge-rds-sg" }
+  tags = { Name = "clarityseq-rds-sg" }
 }
 
 resource "aws_security_group" "ecs" {
-  name        = "genomeforge-ecs"
+  name        = "clarityseq-ecs"
   description = "ECS Fargate (Beacon API + Celery daemon)"
   vpc_id      = aws_vpc.main.id
 
@@ -170,7 +170,7 @@ resource "aws_security_group" "ecs" {
     description = "Allow all outbound (ClinVar API + NCBI)"
   }
 
-  tags = { Name = "genomeforge-ecs-sg" }
+  tags = { Name = "clarityseq-ecs-sg" }
 }
 
 # ── Outputs ───────────────────────────────────────────────────────────────────

@@ -105,7 +105,7 @@ class TestWriteAuditLog:
         out = tmp_path / "audit.jsonld"
         write_audit_log(sample_audit_data, out)
         data = json.loads(out.read_text())
-        assert data["@id"] == "urn:genomeforge:audit:LAB-2024-12345:2024-12-13"
+        assert data["@id"] == "urn:clarityseq:audit:LAB-2024-12345:2024-12-13"
 
     def test_data_sources_contains_gnomad_version(
         self, tmp_path: Path, sample_audit_data: dict
@@ -149,7 +149,7 @@ class TestWriteAuditLog:
         assert v["gene"] == "BRCA1"
         assert v["acmg_class"] == "Pathogenic"
         assert v["rules_applied"] == ["PVS1", "PM2"]
-        assert v["@type"] == "genomeforge:VariantClassification"
+        assert v["@type"] == "clarityseq:VariantClassification"
 
     def test_classification_scheme_default_when_missing(self, tmp_path: Path) -> None:
         """Missing classification_scheme falls back to the default dict."""
@@ -237,7 +237,7 @@ class TestAppendAuditEvent:
         assert "events" in data
         assert len(data["events"]) == 1
         event = data["events"][0]
-        assert event["@type"] == "genomeforge:clinvar_submission"
+        assert event["@type"] == "clarityseq:clinvar_submission"
         assert event["data"]["accession"] == "SCV000123"
         assert "timestamp" in event
 
@@ -253,8 +253,8 @@ class TestAppendAuditEvent:
 
         data = json.loads(out.read_text())
         assert len(data["events"]) == 2
-        assert data["events"][0]["@type"] == "genomeforge:vus_reclassification"
-        assert data["events"][1]["@type"] == "genomeforge:report_amendment"
+        assert data["events"][0]["@type"] == "clarityseq:vus_reclassification"
+        assert data["events"][1]["@type"] == "clarityseq:report_amendment"
 
     def test_preserves_existing_audit_fields(
         self, tmp_path: Path, sample_audit_data: dict

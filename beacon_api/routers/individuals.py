@@ -195,7 +195,7 @@ async def query_individuals(
 
     return {
         "meta": {
-            "beaconId": "org.genomeforge.beacon",
+            "beaconId": "org.clarityseq.beacon",
             "apiVersion": "v2.1.1",
             "returnedSchemas": [
                 {
@@ -210,7 +210,7 @@ async def query_individuals(
         "responseSummary": {"exists": total > 0, "numTotalResults": total},
         "resultSets": [
             {
-                "id": "genomeforge.wgs.grch38",
+                "id": "clarityseq.wgs.grch38",
                 "type": "dataset",
                 "exists": total > 0,
                 "resultsCount": len(results),

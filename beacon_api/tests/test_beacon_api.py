@@ -103,7 +103,7 @@ class TestInfo:
         data = response.json()
         assert "meta" in data, "Response missing 'meta' key"
         assert "beaconId" in data["meta"], "meta missing 'beaconId'"
-        assert data["meta"]["beaconId"] == "org.genomeforge.beacon"
+        assert data["meta"]["beaconId"] == "org.clarityseq.beacon"
 
     def test_info_api_version(self, client: TestClient) -> None:
         """GET /info returns correct API version v2.1.1.

@@ -1,5 +1,5 @@
 # =============================================================================
-# GenomeForge — Makefile
+# ClaritySeq — Makefile
 # =============================================================================
 # Convenience targets for development, testing, and deployment.
 # All targets are documented. Run `make help` to see available targets.
@@ -26,9 +26,9 @@ SRC_DIRS   := bayesacmg/src beacon_api annotation reclassification reporting pgx
 TEST_DIRS  := bayesacmg/tests beacon_api/tests annotation/tests reclassification/tests
 
 # Docker image names (ECR prefix set in .env)
-PIPELINE_IMAGE := genomeforge/pipeline
-BEACON_IMAGE   := genomeforge/beacon
-DAEMON_IMAGE   := genomeforge/daemon
+PIPELINE_IMAGE := clarityseq/pipeline
+BEACON_IMAGE   := clarityseq/beacon
+DAEMON_IMAGE   := clarityseq/daemon
 
 # Colours for output
 RESET  := \033[0m
@@ -40,7 +40,7 @@ CYAN   := \033[0;36m
 # =============================================================================
 .PHONY: help
 help: ## Show this help message
-	@printf "$(BOLD)GenomeForge — Available Make Targets$(RESET)\n"
+	@printf "$(BOLD)ClaritySeq — Available Make Targets$(RESET)\n"
 	@printf "$(CYAN)═══════════════════════════════════════════════════════════$(RESET)\n"
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
 		sort | \
@@ -50,7 +50,7 @@ help: ## Show this help message
 # =============================================================================
 .PHONY: install
 install: ## Install all Python dependencies in a virtual environment
-	@printf "$(BOLD)Installing GenomeForge dependencies...$(RESET)\n"
+	@printf "$(BOLD)Installing ClaritySeq dependencies...$(RESET)\n"
 	$(PYTHON) -m venv $(VENV_DIR)
 	source $(VENV_DIR)/bin/activate && \
 		$(PIP) install --upgrade pip && \
@@ -152,7 +152,7 @@ docker-build: ## Build all Docker images (pipeline, beacon, daemon)
 		--tag $(PIPELINE_IMAGE):0.1.0 \
 		--tag $(PIPELINE_IMAGE):latest \
 		--label "org.opencontainers.image.version=0.1.0" \
-		--label "org.opencontainers.image.source=https://github.com/genomeforge/genome-forge" \
+		--label "org.opencontainers.image.source=https://github.com/clarityseq/clarityseq" \
 		.
 	@printf "$(CYAN)→ Beacon API image$(RESET)\n"
 	docker build \

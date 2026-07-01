@@ -1,7 +1,7 @@
 """
 pgx
 ===
-Pharmacogenomics (PGx) module for GenomeForge.
+Pharmacogenomics (PGx) module for ClaritySeq.
 
 Provides CYP2D6 star allele genotyping (via Cyrius), PharmVar star allele
 definitions, and CPIC drug dosing recommendations.

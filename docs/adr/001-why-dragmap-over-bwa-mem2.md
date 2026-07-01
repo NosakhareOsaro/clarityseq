@@ -2,14 +2,14 @@
 
 **Status:** Accepted  
 **Date:** 2026-06-22  
-**Deciders:** GenomeForge core team  
+**Deciders:** ClaritySeq core team  
 **Category:** Alignment
 
 ---
 
 ## Context
 
-GenomeForge requires a primary short-read aligner for 30× Illumina WGS data.
+ClaritySeq requires a primary short-read aligner for 30× Illumina WGS data.
 The two principal candidates are:
 
 1. **DRAGMAP (dragen-os v1.3.0)** — the aligner underlying Illumina's DRAGEN platform,

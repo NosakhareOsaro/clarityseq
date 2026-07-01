@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest a new feature or enhancement for GenomeForge
+about: Suggest a new feature or enhancement for ClaritySeq
 title: "[FEAT] "
 labels: enhancement
 assignees: ""
@@ -23,7 +23,7 @@ assignees: ""
 
 - Guideline / evidence source:
   `ACGS 2024 v1.2 §__ / ClinGen SVI 2024 (date) / Richards 2015 PMID:25741868 / Other:`
-- Current behaviour in GenomeForge:
+- Current behaviour in ClaritySeq:
 - Desired behaviour:
 - ACMG rule(s) affected: `PVS1 / PM2 / PP3 / BA1 / BS1 / ...`
 - Does this change any ACMG rule weight? `Y / N`

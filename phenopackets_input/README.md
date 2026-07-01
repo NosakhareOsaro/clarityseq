@@ -1,10 +1,10 @@
 # phenopackets_input/
 
-Phenopackets v2.0 clinical input handling for GenomeForge.
+Phenopackets v2.0 clinical input handling for ClaritySeq.
 
 ## What are Phenopackets?
 
-Phenopackets v2.0 is the GA4GH standard for sharing disease and phenotype data in a computable format. GenomeForge uses them to capture clinical context (HPO terms, family history, pedigree) and pass it to Exomiser 14 for phenotype-driven variant prioritisation.
+Phenopackets v2.0 is the GA4GH standard for sharing disease and phenotype data in a computable format. ClaritySeq uses them to capture clinical context (HPO terms, family history, pedigree) and pass it to Exomiser 14 for phenotype-driven variant prioritisation.
 
 Reference: Jacobsen et al. 2022 Nature Biotechnology PMID:35705716
 

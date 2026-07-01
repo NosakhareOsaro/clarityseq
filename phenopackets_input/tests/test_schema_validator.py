@@ -71,7 +71,7 @@ def valid_phenopacket_v2() -> dict[str, Any]:
         ],
         "metaData": {
             "created": "2024-12-13T00:00:00Z",
-            "createdBy": "GenomeForge",
+            "createdBy": "ClaritySeq",
             "phenopacketSchemaVersion": "2.0",
             "resources": [
                 {

@@ -1,7 +1,7 @@
 """
 reporting
 =========
-NHS GMS-style clinical report generation module for GenomeForge.
+NHS GMS-style clinical report generation module for ClaritySeq.
 
 Generates HTML + PDF + JSON-LD audit trail clinical reports compliant
 with ACGS Best Practice Guidelines 2024 v1.2.

@@ -10,7 +10,7 @@ Implements bidirectional conversion:
 Why both formats:
     Phenopackets: exchange format optimised for rare disease / genomics.
     FHIR R4: HL7 interoperability standard used by NHS/EHR systems.
-    GenomeForge supports both for NHS GMS data exchange.
+    ClaritySeq supports both for NHS GMS data exchange.
 
 Mapping strategy:
     Phenopackets subject   ↔  FHIR Patient resource.
@@ -317,7 +317,7 @@ def fhir_to_phenopacket(
     conditions: list[dict[str, Any]] | None = None,
     observations: list[dict[str, Any]] | None = None,
     phenopacket_id: str | None = None,
-    created_by: str = "GenomeForge FHIR mapper",
+    created_by: str = "ClaritySeq FHIR mapper",
 ) -> dict[str, Any]:
     """Convert FHIR R4 resources to a Phenopackets v2.0 document.
 

@@ -181,7 +181,7 @@ def main(argv: list[str] | None = None) -> int:
     failures: list[str] = []
 
     print(f"\n{'='*60}")
-    print("GenomeForge Benchmark Results (hap.py v0.3.15, GIAB HG001)")
+    print("ClaritySeq Benchmark Results (hap.py v0.3.15, GIAB HG001)")
     print(f"{'='*60}")
     print(f"Source: {summary_csv}")
     print()

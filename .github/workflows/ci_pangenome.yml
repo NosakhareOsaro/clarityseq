@@ -1,4 +1,4 @@
-# GenomeForge Pangenome CI — Nightly
+# ClaritySeq Pangenome CI — Nightly
 #
 # Runs nightly at 02:00 UTC to validate the pangenome arm.
 # Acceptance criterion: HPRC pangenome SNP sensitivity ≥ GRCh38 SNP sensitivity.
@@ -95,6 +95,6 @@ jobs:
           # Slack notification on pangenome CI failure
           curl -s -X POST "$SLACK_WEBHOOK_URL" \
             -H 'Content-type: application/json' \
-            --data "{\"text\":\"⚠️ GenomeForge pangenome nightly CI FAILED. Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
+            --data "{\"text\":\"⚠️ ClaritySeq pangenome nightly CI FAILED. Check: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"}" || true
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

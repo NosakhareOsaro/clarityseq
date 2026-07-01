@@ -1,7 +1,7 @@
 """
 prioritisation
 ==============
-Variant prioritisation module for GenomeForge.
+Variant prioritisation module for ClaritySeq.
 
 Combines HPO phenotype scoring, inheritance mode filtering, Exomiser 14
 prioritisation, and composite ACMG/HPO/inheritance ranking.

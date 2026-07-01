@@ -1,6 +1,6 @@
 """Celery beat daemon for weekly ClinVar reclassification monitoring.
 
-This module defines Celery tasks and schedules for the GenomeForge
+This module defines Celery tasks and schedules for the ClaritySeq
 reclassification monitoring daemon. Tasks run on a weekly schedule
 (Mondays 08:00 UTC) to align with the ClinVar weekly release cycle.
 
@@ -70,7 +70,7 @@ BROKER_URL = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
 RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/1")
 
 app = Celery(
-    "genomeforge_reclassification",
+    "clarityseq_reclassification",
     broker=BROKER_URL,
     backend=RESULT_BACKEND,
 )
@@ -139,7 +139,7 @@ app.conf.update(
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgresql+psycopg2://genomeforge:genomeforge@localhost:5432/genomeforge",
+    "postgresql+psycopg2://clarityseq:clarityseq@localhost:5432/clarityseq",
 )
 
 _engine = None

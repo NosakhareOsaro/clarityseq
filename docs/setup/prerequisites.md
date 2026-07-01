@@ -1,6 +1,6 @@
-# GenomeForge — Prerequisites
+# ClaritySeq — Prerequisites
 
-This document describes all tools required to run GenomeForge and how to install them.
+This document describes all tools required to run ClaritySeq and how to install them.
 Run `make check-prereqs` to verify your environment.
 
 ---
@@ -21,7 +21,7 @@ git --version
 - Ubuntu: `sudo apt-get install git`
 - Official: <https://git-scm.com/downloads>
 
-Why 2.40: GenomeForge uses `git tag --sort=-creatordate` and `git log --follow` features
+Why 2.40: ClaritySeq uses `git tag --sort=-creatordate` and `git log --follow` features
 introduced in git 2.40.
 
 ---
@@ -58,7 +58,7 @@ sudo mv nextflow /usr/local/bin/
 ```
 
 DSL2 is enabled by `nextflow.enable.dsl = 2` in `nextflow.config`. Nextflow < 24.x
-does not support all DSL2 features used by GenomeForge.
+does not support all DSL2 features used by ClaritySeq.
 
 ---
 
@@ -289,8 +289,8 @@ vep_install --NO_HTSLIB \
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/genomeforge/genome-forge.git
-cd genome-forge
+git clone https://github.com/clarityseq/clarityseq.git
+cd clarityseq
 
 # 2. Copy and fill environment variables
 cp .env.example .env

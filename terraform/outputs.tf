@@ -1,4 +1,4 @@
-# GenomeForge — Terraform Outputs
+# ClaritySeq — Terraform Outputs
 # Reference these in nextflow.config aws profile and CI/CD secrets
 
 output "region" {

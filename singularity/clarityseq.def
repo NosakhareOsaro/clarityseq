@@ -1,23 +1,23 @@
 Bootstrap: docker
-From: genomeforge/pipeline:0.1.0
+From: clarityseq/pipeline:0.1.0
 
-# GenomeForge Singularity/Apptainer Definition
+# ClaritySeq Singularity/Apptainer Definition
 # Wraps the Docker pipeline image for HPC environments (SLURM/PBS/LSF)
 # where Docker is unavailable but Singularity/Apptainer is standard.
 #
-# Build: singularity build genome-forge_0.1.0.sif singularity/genome-forge.def
-# Run:   singularity exec genome-forge_0.1.0.sif gatk --version
-# Shell: singularity shell genome-forge_0.1.0.sif
+# Build: singularity build clarityseq_0.1.0.sif singularity/clarityseq.def
+# Run:   singularity exec clarityseq_0.1.0.sif gatk --version
+# Shell: singularity shell clarityseq_0.1.0.sif
 #
 # Nextflow Singularity usage:
 #   nextflow run pipelines/wgs_grch38.nf -profile hpc
-#   (hpc profile sets process.container to genome-forge_0.1.0.sif)
+#   (hpc profile sets process.container to clarityseq_0.1.0.sif)
 #
 # Apptainer (replacement for Singularity; same .sif format):
-#   apptainer build genome-forge_0.1.0.sif singularity/genome-forge.def
+#   apptainer build clarityseq_0.1.0.sif singularity/clarityseq.def
 #
-# Version: GenomeForge 0.1.0
-# Base: genomeforge/pipeline:0.1.0 (Ubuntu 24.04 + GATK 4.6.0.0 + DRAGMAP 1.3.0)
+# Version: ClaritySeq 0.1.0
+# Base: clarityseq/pipeline:0.1.0 (Ubuntu 24.04 + GATK 4.6.0.0 + DRAGMAP 1.3.0)
 # Tools: GATK 4.6.0.0, DRAGMAP 1.3.0, BWA-MEM2 2.2.1, SAMtools 1.20,
 #        DeepVariant 1.8.0, VEP 111, ExpansionHunter 5.0, Haplogrep3 3.2.2,
 #        Cyrius 1.1.2, somalier 0.2.19, vg 1.56.0 (giraffe)
@@ -25,16 +25,16 @@ From: genomeforge/pipeline:0.1.0
 # HPRC pangenome note:
 #   The HPRC v1.1 GBZ graph (~22 GB) + GBWT (~20 GB) + dist (~4 GB) must be
 #   available on shared filesystem or object storage. Bind-mount with:
-#   singularity exec --bind /path/to/hprc_indexes:/data/hprc genome-forge_0.1.0.sif vg
+#   singularity exec --bind /path/to/hprc_indexes:/data/hprc clarityseq_0.1.0.sif vg
 
 %labels
-    Author GenomeForge Team
+    Author ClaritySeq Team
     Version 0.1.0
-    Description GenomeForge WGS pipeline image (GATK 4.6.0.0 + DRAGMAP 1.3.0 + VEP 111)
+    Description ClaritySeq WGS pipeline image (GATK 4.6.0.0 + DRAGMAP 1.3.0 + VEP 111)
     License MIT
 
 %help
-    GenomeForge v0.1.0 — Production WGS clinical variant interpretation
+    ClaritySeq v0.1.0 — Production WGS clinical variant interpretation
 
     Quick reference:
       gatk --version           # GATK 4.6.0.0
@@ -48,7 +48,7 @@ From: genomeforge/pipeline:0.1.0
       python3 -m cyrius --help # Cyrius 1.1.2 (CYP2D6)
       somalier --version       # somalier 0.2.19
 
-    Run GenomeForge WGS pipeline:
+    Run ClaritySeq WGS pipeline:
       nextflow run pipelines/wgs_grch38.nf -profile hpc \
         --input samplesheet.csv \
         --outdir results/
@@ -60,7 +60,7 @@ From: genomeforge/pipeline:0.1.0
     # HPC environments may not have /data; create standard mount points
     mkdir -p /data /scratch /reference /results
 
-    # Add GenomeForge to PATH (already set in Docker image via ENV)
+    # Add ClaritySeq to PATH (already set in Docker image via ENV)
     echo 'export PATH="/opt/conda/bin:/opt/tools/bin:$PATH"' >> /etc/profile
 
     # Set locale for VEP Perl scripts
@@ -77,7 +77,7 @@ From: genomeforge/pipeline:0.1.0
 
 %test
     # Smoke tests run during `singularity build --test`
-    echo "=== GenomeForge Singularity smoke tests ==="
+    echo "=== ClaritySeq Singularity smoke tests ==="
     gatk --version | grep "4.6.0.0" || { echo "FAIL: GATK version"; exit 1; }
     samtools --version | head -1
     python3 --version | grep "3.12" || { echo "FAIL: Python 3.12 required"; exit 1; }
