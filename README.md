@@ -1,8 +1,8 @@
 <!-- ClaritySeq README -->
 # ClaritySeq
 
-[![CI](https://github.com/clarityseq/clarityseq/actions/workflows/ci.yml/badge.svg)](https://github.com/clarityseq/clarityseq/actions/workflows/ci.yml)
-[![Coverage](https://img.shields.io/badge/coverage-≥90%25-brightgreen)](https://github.com/clarityseq/clarityseq)
+[![CI](https://github.com/NosakhareOsaro/clarityseq/actions/workflows/ci.yml/badge.svg)](https://github.com/NosakhareOsaro/clarityseq/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-≥90%25-brightgreen)](https://github.com/NosakhareOsaro/clarityseq)
 [![DOI](https://img.shields.io/badge/DOI-10.xxxx%2Fxxxxxx-blue)](https://doi.org/10.xxxx/xxxxxx)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
@@ -19,7 +19,7 @@ Stack: DRAGEN-GATK 4.6.0.0 · DeepVariant 1.8.0 · HPRC pangenome · VEP v111 ·
 
 ```bash
 # 1. Clone and install
-git clone https://github.com/clarityseq/clarityseq && cd clarityseq
+git clone https://github.com/NosakhareOsaro/clarityseq.git && cd clarityseq
 pip install -e "bayesacmg/[dev]"
 
 # 2. Configure paths
@@ -161,7 +161,7 @@ flowchart TD
     with Bayesian ACMG classification (ACGS 2024 v1.2)},
   version = {0.1.0},
   year = {2026},
-  url = {https://github.com/clarityseq/clarityseq}
+  url = {https://github.com/NosakhareOsaro/clarityseq}
 }
 ```
 

@@ -31,9 +31,9 @@ abstract: >-
 
 license: MIT
 
-url: "https://github.com/clarityseq/clarityseq"
-repository-code: "https://github.com/clarityseq/clarityseq"
-repository-artifact: "https://github.com/clarityseq/clarityseq/releases"
+url: "https://github.com/NosakhareOsaro/clarityseq"
+repository-code: "https://github.com/NosakhareOsaro/clarityseq"
+repository-artifact: "https://github.com/NosakhareOsaro/clarityseq/releases"
 
 authors:
   - family-names: "Nosakhare"
