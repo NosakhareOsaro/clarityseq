@@ -18,7 +18,6 @@ References:
 from __future__ import annotations
 
 import asyncio
-import sys
 from typing import Any
 
 import click
@@ -132,6 +131,7 @@ def _quick_classify(
 # CLI entry point
 # ---------------------------------------------------------------------------
 
+
 @click.group()
 @click.version_option(package_name="bayesacmg")
 def main() -> None:
@@ -144,26 +144,53 @@ def main() -> None:
 
 @main.command("classify")
 @click.option("--chrom", required=True, help="Chromosome (e.g. chr17)")
-@click.option("--pos", required=True, type=int, help="Genomic position (GRCh38, 1-based)")
+@click.option(
+    "--pos", required=True, type=int, help="Genomic position (GRCh38, 1-based)"
+)
 @click.option("--ref", required=True, help="Reference allele")
 @click.option("--alt", required=True, help="Alternate allele")
 @click.option("--gene", required=True, help="HGNC gene symbol")
-@click.option("--gnomad-af", default=None, type=float, help="gnomAD v4.1 allele frequency")
+@click.option(
+    "--gnomad-af", default=None, type=float, help="gnomAD v4.1 allele frequency"
+)
 @click.option(
     "--variant-type",
     default="snv",
-    type=click.Choice([
-        "snv", "indel", "frameshift", "nonsense", "splice_canonical",
-        "splice_region", "start_loss", "stop_loss",
-        "inframe_insertion", "inframe_deletion", "synonymous",
-    ]),
+    type=click.Choice(
+        [
+            "snv",
+            "indel",
+            "frameshift",
+            "nonsense",
+            "splice_canonical",
+            "splice_region",
+            "start_loss",
+            "stop_loss",
+            "inframe_insertion",
+            "inframe_deletion",
+            "synonymous",
+        ]
+    ),
     help="Variant type",
 )
-@click.option("--alphamissense", default=None, type=float, help="AlphaMissense score (0-1)")
-@click.option("--de-novo", is_flag=True, default=False, help="Confirmed de novo variant")
-@click.option("--lof-mechanism", is_flag=True, default=False, help="LoF is disease mechanism")
-@click.option("--mane-select", is_flag=True, default=True, help="Variant on MANE Select transcript")
-@click.option("--json-output", is_flag=True, default=False, help="Output result as JSON")
+@click.option(
+    "--alphamissense", default=None, type=float, help="AlphaMissense score (0-1)"
+)
+@click.option(
+    "--de-novo", is_flag=True, default=False, help="Confirmed de novo variant"
+)
+@click.option(
+    "--lof-mechanism", is_flag=True, default=False, help="LoF is disease mechanism"
+)
+@click.option(
+    "--mane-select",
+    is_flag=True,
+    default=True,
+    help="Variant on MANE Select transcript",
+)
+@click.option(
+    "--json-output", is_flag=True, default=False, help="Output result as JSON"
+)
 def classify_cmd(
     chrom: str,
     pos: int,
@@ -208,6 +235,7 @@ def classify_cmd(
 
     if json_output:
         import json as json_mod
+
         out: dict[str, Any] = {
             "variant": f"{chrom}:{pos}:{ref}>{alt}",
             "gene": gene,
@@ -223,10 +251,7 @@ def classify_cmd(
         return
 
     # Rich formatted output
-    title = (
-        f"BayesACMG Classification: "
-        f"{chrom}:{pos} {ref}>{alt} ({gene})"
-    )
+    title = f"BayesACMG Classification: " f"{chrom}:{pos} {ref}>{alt} ({gene})"
     table = Table(title="Applied Rules", show_header=True, header_style="bold cyan")
     table.add_column("Rule", style="cyan", width=12)
     table.add_column("Strength", width=16)
@@ -273,11 +298,19 @@ def show_spec_cmd(gene_symbol: str) -> None:
     table.add_row("PM2 Weight", spec.pm2_weight)
     table.add_row(
         "PP3 AlphaMissense threshold",
-        str(spec.pp3_threshold_alphamissense) if spec.pp3_threshold_alphamissense else "default (0.564)",
+        (
+            str(spec.pp3_threshold_alphamissense)
+            if spec.pp3_threshold_alphamissense
+            else "default (0.564)"
+        ),
     )
     table.add_row(
         "BP4 AlphaMissense threshold",
-        str(spec.bp4_threshold_alphamissense) if spec.bp4_threshold_alphamissense else "default (0.340)",
+        (
+            str(spec.bp4_threshold_alphamissense)
+            if spec.bp4_threshold_alphamissense
+            else "default (0.340)"
+        ),
     )
     console.print(table)
 

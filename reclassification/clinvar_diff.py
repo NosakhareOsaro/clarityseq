@@ -143,6 +143,9 @@ def _parse_info(info_str: str) -> dict[str, str]:
     """
     result: dict[str, str] = {}
     for item in info_str.split(";"):
+        item = item.strip()
+        if not item:
+            continue
         if "=" in item:
             k, _, v = item.partition("=")
             result[k] = v
@@ -212,6 +215,8 @@ def _iter_vcf_records(vcf_path: Path) -> Iterator[ClinVarRecord]:
             # ClinVar may pipe-separate multiple values; take first
             clnsig_raw = raw_clnsig.split("|")[0]
             clnsig = CLNSIG_MAP.get(clnsig_raw)
+            if clnsig is None:
+                continue  # Unrecognised CLNSIG (e.g. drug_response) — skip
 
             # Parse review stars
             raw_revstat = info.get(CLNREVSTAT_KEY, "")

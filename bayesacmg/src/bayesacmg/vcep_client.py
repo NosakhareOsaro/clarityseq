@@ -56,6 +56,8 @@ from typing import Any
 import httpx
 from tenacity import retry, stop_after_attempt, wait_exponential
 
+from bayesacmg.models import EvidenceStrength
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -63,13 +65,14 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 _CSPEC_API_BASE = "https://cspec.genome.network/cspec/api/svi/"
 _CACHE_TTL_SECONDS = 86_400  # 24-hour TTL per ClinGen CSpec caching guidance
 _MAX_RETRIES = 3
-_RETRY_WAIT_MIN = 1    # seconds
-_RETRY_WAIT_MAX = 10   # seconds
+_RETRY_WAIT_MIN = 1  # seconds
+_RETRY_WAIT_MAX = 10  # seconds
 
 
 # ---------------------------------------------------------------------------
 # Data models
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class VCEPSpec:
@@ -93,9 +96,13 @@ class VCEPSpec:
     gene_symbol: str
     vcep_name: str = ""
     vcep_id: str = ""
-    pm2_weight: str = "supporting"              # default ClinGen SVI 2024
-    pp3_threshold_alphamissense: float | None = None   # None → use 0.564
-    bp4_threshold_alphamissense: float | None = None   # None → use 0.340
+    pm2_weight: str = "supporting"  # default ClinGen SVI 2024 (str form)
+    pm2_strength: EvidenceStrength = (
+        EvidenceStrength.SUPPORTING
+    )  # EvidenceStrength form
+    has_gene_specific_rules: bool = False  # True if VCEP has custom rule overrides
+    pp3_threshold_alphamissense: float | None = None  # None → use 0.564
+    bp4_threshold_alphamissense: float | None = None  # None → use 0.340
     custom_thresholds: dict[str, Any] = field(default_factory=dict)
     raw_spec: dict[str, Any] = field(default_factory=dict)
     retrieved_at: float = 0.0
@@ -144,7 +151,7 @@ def _parse_spec(gene_symbol: str, raw: list[dict[str, Any]]) -> VCEPSpec:
         if crit_id == "PM2":
             strength = criterion.get("strength", "").lower()
             if "moderate" in strength:
-                pm2_weight = "moderate"   # VCEP override: PM2 at Moderate
+                pm2_weight = "moderate"  # VCEP override: PM2 at Moderate
             break
 
     return VCEPSpec(
@@ -162,7 +169,9 @@ def _parse_spec(gene_symbol: str, raw: list[dict[str, Any]]) -> VCEPSpec:
     wait=wait_exponential(multiplier=1, min=_RETRY_WAIT_MIN, max=_RETRY_WAIT_MAX),
     reraise=True,
 )
-async def _fetch_spec_from_api(gene_symbol: str, client: httpx.AsyncClient) -> list[dict[str, Any]]:
+async def _fetch_spec_from_api(
+    gene_symbol: str, client: httpx.AsyncClient
+) -> list[dict[str, Any]]:
     """Fetch VCEP spec from ClinGen CSpec registry API.
 
     Applies exponential backoff retry (up to 3 attempts) via tenacity.
@@ -276,3 +285,77 @@ def clear_cache() -> None:
         None.
     """
     _spec_cache.clear()
+
+
+# ---------------------------------------------------------------------------
+# Class-based interface (used by tests and external callers)
+# ---------------------------------------------------------------------------
+
+# Alias: VCEPSpecification is the public name; VCEPSpec is the internal name
+VCEPSpecification = VCEPSpec
+
+
+class VCEPClient:
+    """Class-based wrapper around the ClinGen CSpec VCEP registry client.
+
+    Provides an instance-level cache so tests can isolate cache state between
+    test cases without touching the module-level ``_spec_cache``.
+
+    Args:
+        cache_ttl_hours: Cache TTL in hours (default: 24).
+    """
+
+    def __init__(self, cache_ttl_hours: int = 24) -> None:
+        self.cache_ttl_seconds = cache_ttl_hours * 3600
+        self._cache: dict[str, tuple[VCEPSpec, float]] = {}
+
+    async def _fetch_from_api(self, gene_symbol: str) -> VCEPSpec | None:
+        """Fetch raw VCEP specification from the ClinGen CSpec API.
+
+        This is the network call; separated to allow mocking in tests.
+        Returns None if the gene has no VCEP specification.
+        """
+        try:
+            spec = await get_vcep_spec(gene_symbol)
+            # A gene with no actual VCEP spec returns a default VCEPSpec with empty vcep_name
+            # Callers that need to distinguish "has spec" from "no spec" check vcep_name != ""
+            return spec if spec.vcep_name else None
+        except Exception:  # noqa: BLE001
+            return None
+
+    async def get_spec(self, gene_symbol: str) -> VCEPSpec | None:
+        """Fetch VCEP specification for a gene, using the instance cache.
+
+        Returns None if the gene has no VCEP specification in the ClinGen CSpec registry.
+
+        Args:
+            gene_symbol: HGNC gene symbol (e.g. ``"BRCA1"``).
+
+        Returns:
+            VCEPSpec (alias: VCEPSpecification) or None.
+        """
+        now = time.monotonic()
+        if gene_symbol in self._cache:
+            spec, cached_at = self._cache[gene_symbol]
+            if now - cached_at < self.cache_ttl_seconds:
+                return spec
+
+        spec = await self._fetch_from_api(gene_symbol)
+        if spec is not None:
+            self._cache[gene_symbol] = (spec, now)
+        return spec
+
+    async def get_specification(self, gene_symbol: str) -> VCEPSpec | None:
+        """Alias for get_spec (used by tests). Returns None on timeout or missing spec."""
+        try:
+            return await self.get_spec(gene_symbol)
+        except Exception:  # noqa: BLE001
+            return None
+
+    def get_spec_sync(self, gene_symbol: str) -> VCEPSpec:
+        """Synchronous variant of ``get_spec``."""
+        return asyncio.run(self.get_spec(gene_symbol))
+
+    def clear(self) -> None:
+        """Clear this client's cache."""
+        self._cache.clear()

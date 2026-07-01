@@ -41,7 +41,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
 
 import httpx
 
@@ -83,16 +82,16 @@ class Panel:
 
     panel_id: int
     name: str
-    disease_group: Optional[str] = None
-    disease_sub_group: Optional[str] = None
+    disease_group: str | None = None
+    disease_sub_group: str | None = None
     status: str = "public"
-    version: Optional[str] = None
+    version: str | None = None
     gene_confidence: int = 0
     gene_confidence_colour: str = "None"
-    mode_of_inheritance: Optional[str] = None
+    mode_of_inheritance: str | None = None
     phenotypes: list[str] = field(default_factory=list)
     is_diagnostic: bool = False
-    panel_url: Optional[str] = None
+    panel_url: str | None = None
 
 
 @dataclass
@@ -108,9 +107,9 @@ class GeneEntry:
         highest_confidence: Maximum confidence level across all panels.
     """
 
-    hgnc_id: Optional[str]
+    hgnc_id: str | None
     gene_symbol: str
-    ensembl_gene_id: Optional[str] = None
+    ensembl_gene_id: str | None = None
     panels: list[Panel] = field(default_factory=list)
     green_panels: list[Panel] = field(default_factory=list)
     highest_confidence: int = 0
@@ -167,7 +166,7 @@ class PanelAppClient:
 
         return self._parse_gene_panels(raw)
 
-    async def get_panel_by_id(self, panel_id: int) -> Optional[dict]:
+    async def get_panel_by_id(self, panel_id: int) -> dict | None:
         """Retrieve panel metadata by PanelApp panel ID.
 
         Args:
@@ -183,7 +182,7 @@ class PanelAppClient:
             logger.warning("PanelApp panel %d lookup failed: %s", panel_id, exc)
             return None
 
-    async def get_gene_entry(self, gene_symbol: str) -> Optional[GeneEntry]:
+    async def get_gene_entry(self, gene_symbol: str) -> GeneEntry | None:
         """Return a full GeneEntry for a gene across all PanelApp panels.
 
         Args:
@@ -209,8 +208,8 @@ class PanelAppClient:
 
     async def search_panels(
         self,
-        name: Optional[str] = None,
-        disease_group: Optional[str] = None,
+        name: str | None = None,
+        disease_group: str | None = None,
     ) -> list[dict]:
         """Search PanelApp panels by name or disease group.
 
@@ -239,7 +238,7 @@ class PanelAppClient:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _get(self, url: str, params: Optional[dict] = None) -> dict:
+    async def _get(self, url: str, params: dict | None = None) -> dict:
         """Execute a GET request against the PanelApp API.
 
         Args:
@@ -267,10 +266,7 @@ class PanelAppClient:
             List of Panel objects filtered by min_confidence.
         """
         panels: list[Panel] = []
-        results = data.get("results", [data])  # single-result endpoints return the gene directly
-
         # Handle the paginated format and the single-gene format
-        gene_data = data if "panel" in data else {}
         panel_items = data.get("results", [])
 
         # Direct gene endpoint returns a single object with panels nested
@@ -316,7 +312,7 @@ class PanelAppClient:
 # ---------------------------------------------------------------------------
 
 
-def _safe_int(value: object) -> Optional[int]:
+def _safe_int(value: object) -> int | None:
     """Convert value to int safely.
 
     Args:

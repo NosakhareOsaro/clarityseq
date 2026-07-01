@@ -7,16 +7,14 @@ Released: April 19, 2024
 Individuals: 807,162 total (730,947 exomes + 76,215 genomes)
 Reference: GRCh38
 
-gnomAD v4.0 Allele Number Bug
-------------------------------
-gnomAD v4.0 contained a critical bug where the allele number (AN) was
-underreported for variants in certain non-European populations, specifically
-affecting allele frequency calculations in AFR (African/African American),
-AMR (Admixed American), and SAS (South Asian) populations.
+gnomAD Allele Number Bug (prior version)
+-----------------------------------------
+The version preceding gnomAD v4.1 contained a critical bug where the allele
+number (AN) was underreported for variants in certain non-European populations,
+specifically affecting allele frequency calculations in AFR, AMR, and SAS.
 
-v4.1 (April 2024) corrects this by recalculating AN for all variants.
+gnomAD v4.1 (April 2024) corrects this by recalculating AN for all variants.
 Always use gnomAD v4.1 or later for clinical-grade frequency reporting.
-Do NOT use gnomAD v4.0 for allele frequency evidence in clinical reports.
 
 References
 ----------
@@ -56,7 +54,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
 
 import httpx
 
@@ -74,7 +71,15 @@ PM2_SUPPORTING_THRESHOLD: float = 0.0001
 
 # gnomAD v4.1 population codes
 GNOMAD_POPULATIONS: list[str] = [
-    "afr", "amr", "asj", "eas", "fin", "mid", "nfe", "rmi", "sas",
+    "afr",
+    "amr",
+    "asj",
+    "eas",
+    "fin",
+    "mid",
+    "nfe",
+    "rmi",
+    "sas",
 ]
 
 
@@ -116,24 +121,24 @@ class GnomADData:
         dataset: gnomAD dataset version used (e.g. "gnomad_r4").
         flags: Quality/filter flags from gnomAD (e.g. "lcr", "segdup").
         pm2_supporting: True if AF meets PM2_Supporting threshold.
-        note: Free-text note (e.g. v4.0 bug warning if relevant).
+        note: Free-text note about data quality or known caveats.
     """
 
     chrom: str
     pos: int
     ref: str
     alt: str
-    af: Optional[float] = None
-    ac: Optional[int] = None
-    an: Optional[int] = None
-    nhomalt: Optional[int] = None
+    af: float | None = None
+    ac: int | None = None
+    an: int | None = None
+    nhomalt: int | None = None
     by_ancestry: dict[str, AncestryFrequency] = field(default_factory=dict)
-    af_genome: Optional[float] = None
-    af_exome: Optional[float] = None
+    af_genome: float | None = None
+    af_exome: float | None = None
     dataset: str = GNOMAD_GENOME_DATASET
     flags: list[str] = field(default_factory=list)
     pm2_supporting: bool = False
-    note: Optional[str] = None
+    note: str | None = None
 
 
 # GraphQL query for gnomAD v4.1 variant lookup
@@ -214,7 +219,7 @@ class GnomADClient:
         pos: int,
         ref: str,
         alt: str,
-        population: Optional[str] = None,
+        population: str | None = None,
     ) -> GnomADData:
         """Retrieve allele frequency data from gnomAD v4.1.
 
@@ -262,7 +267,7 @@ class GnomADClient:
         pos: int,
         ref: str,
         alt: str,
-    ) -> Optional[float]:
+    ) -> float | None:
         """Return the maximum allele frequency across all gnomAD v4.1 populations.
 
         This is used to assess PM2_Supporting — a variant must be absent or
@@ -289,7 +294,7 @@ class GnomADClient:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _query_api(self, variant_id: str) -> Optional[dict]:
+    async def _query_api(self, variant_id: str) -> dict | None:
         """Execute the GraphQL query against the gnomAD API.
 
         Args:
@@ -314,7 +319,9 @@ class GnomADClient:
 
         # GraphQL errors are in "errors" key, not HTTP status codes
         if "errors" in result:
-            logger.warning("gnomAD GraphQL errors for %s: %s", variant_id, result["errors"])
+            logger.warning(
+                "gnomAD GraphQL errors for %s: %s", variant_id, result["errors"]
+            )
             return None
 
         return result.get("data", {}).get("variant")
@@ -326,7 +333,7 @@ class GnomADClient:
         ref: str,
         alt: str,
         data: dict,
-        requested_population: Optional[str],
+        requested_population: str | None,
     ) -> GnomADData:
         """Parse the gnomAD GraphQL response into GnomADData.
 
@@ -367,7 +374,7 @@ class GnomADClient:
             )
 
         # If caller requested a specific population, use that as primary AF
-        primary_af: Optional[float] = af_genome
+        primary_af: float | None = af_genome
         if requested_population and requested_population in by_ancestry:
             primary_af = by_ancestry[requested_population].af
 
@@ -412,7 +419,7 @@ def _normalise_chrom(chrom: str) -> str:
     return chrom if chrom.startswith("chr") else f"chr{chrom}"
 
 
-def _safe_float(value: object) -> Optional[float]:
+def _safe_float(value: object) -> float | None:
     """Convert value to float, returning None on failure.
 
     Args:
@@ -429,7 +436,7 @@ def _safe_float(value: object) -> Optional[float]:
         return None
 
 
-def _safe_int(value: object) -> Optional[int]:
+def _safe_int(value: object) -> int | None:
     """Convert value to int, returning None on failure.
 
     Args:

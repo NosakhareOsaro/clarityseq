@@ -31,7 +31,7 @@ from typing import Any
 
 import numpy as np
 
-from bayesacmg.model import BayesACMGModel, _compute_ece
+from bayesacmg.model import BayesACMGModel
 from bayesacmg.models import ACMGRule
 
 logger = logging.getLogger(__name__)
@@ -43,12 +43,12 @@ logger = logging.getLogger(__name__)
 # Each fixture maps a ClinVar RCV accession to expected classification.
 # These serve as a smoke-test calibration set covering all 5 categories.
 _CALIBRATION_FIXTURE_RCVS: dict[str, str] = {
-    "RCV000007535": "Pathogenic",        # BRCA1 NM_007294.4:c.5266dupC
-    "RCV000048684": "Pathogenic",        # BRCA2 c.5946delT (p.Ser1982Argfs)
-    "RCV000031432": "Likely_Pathogenic", # TP53 missense in hotspot
-    "RCV000144292": "VUS",               # BRCA1 variant of uncertain significance
-    "RCV000237295": "Likely_Benign",     # BRCA2 intronic with no splice impact
-    "RCV000013229": "Benign",            # Common BRCA1 synonymous variant
+    "RCV000007535": "Pathogenic",  # BRCA1 NM_007294.4:c.5266dupC
+    "RCV000048684": "Pathogenic",  # BRCA2 c.5946delT (p.Ser1982Argfs)
+    "RCV000031432": "Likely_Pathogenic",  # TP53 missense in hotspot
+    "RCV000144292": "VUS",  # BRCA1 variant of uncertain significance
+    "RCV000237295": "Likely_Benign",  # BRCA2 intronic with no splice impact
+    "RCV000013229": "Benign",  # Common BRCA1 synonymous variant
 }
 
 
@@ -123,15 +123,16 @@ def run_calibration(
 
     logger.info(
         "Calibration complete: ECE=%.4f (threshold 0.05), accuracy=%.3f",
-        ece, acc,
+        ece,
+        acc,
     )
 
     if ece <= 0.05:  # acceptance criterion; ACGS 2024 / ClinGen SVI 2024
         logger.info("Calibration ACCEPTED (ECE=%.4f < 0.05)", ece)
     else:
         logger.warning(
-            "Calibration REJECTED (ECE=%.4f >= 0.05) — "
-            "model requires adjustment", ece
+            "Calibration REJECTED (ECE=%.4f >= 0.05) — " "model requires adjustment",
+            ece,
         )
 
     if output_path is not None:

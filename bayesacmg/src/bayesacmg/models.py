@@ -32,10 +32,38 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+# ---------------------------------------------------------------------------
+# Variant type
+# ---------------------------------------------------------------------------
+
+
+class VariantType(str, Enum):
+    """Molecular consequence category for a variant.
+
+    Used by PVS1, PP3/BP4, BP7, and splicing rules to determine which
+    evidence criteria are applicable.
+    """
+
+    SNV = "snv"
+    MISSENSE = "missense"
+    NONSENSE = "nonsense"
+    FRAMESHIFT = "frameshift"
+    SPLICE_SITE = "splice_site"  # canonical ±1/2 splice donor/acceptor
+    SPLICE_REGION = "splice_region"  # intronic/exonic splice region variant
+    SYNONYMOUS = "synonymous"
+    START_LOSS = "start_loss"
+    STOP_LOSS = "stop_loss"
+    INFRAME_INSERTION = "inframe_insertion"
+    INFRAME_DELETION = "inframe_deletion"
+    LARGE_DELETION = "large_deletion"
+    LARGE_DUPLICATION = "large_duplication"
+    INDEL = "indel"
+
 
 # ---------------------------------------------------------------------------
 # Evidence strength
 # ---------------------------------------------------------------------------
+
 
 class EvidenceStrength(str, Enum):
     """ACMG/AMP evidence strength categories and their point values.
@@ -59,12 +87,12 @@ class EvidenceStrength(str, Enum):
     VCEP specifications may override per-gene via vcep_client.py.
     """
 
-    VERY_STRONG = "very_strong"              # PVS:  +8 pts
-    STRONG = "strong"                        # PS:   +4 pts
-    MODERATE = "moderate"                    # PM (not PM2): +2 pts
-    SUPPORTING = "supporting"               # PP + PM2: +1 pt
-    STAND_ALONE = "stand_alone"              # BA1: → Benign directly (no pts)
-    STRONG_BENIGN = "strong_benign"          # BS:  -4 pts
+    VERY_STRONG = "very_strong"  # PVS:  +8 pts
+    STRONG = "strong"  # PS:   +4 pts
+    MODERATE = "moderate"  # PM (not PM2): +2 pts
+    SUPPORTING = "supporting"  # PP + PM2: +1 pt
+    STAND_ALONE = "stand_alone"  # BA1: → Benign directly (no pts)
+    STRONG_BENIGN = "strong_benign"  # BS:  -4 pts
     SUPPORTING_BENIGN = "supporting_benign"  # BP:  -1 pt
 
 
@@ -74,7 +102,7 @@ STRENGTH_POINTS: dict[EvidenceStrength, int] = {
     EvidenceStrength.STRONG: 4,
     EvidenceStrength.MODERATE: 2,
     EvidenceStrength.SUPPORTING: 1,
-    EvidenceStrength.STAND_ALONE: 0,      # triggers Benign directly
+    EvidenceStrength.STAND_ALONE: 0,  # triggers Benign directly
     EvidenceStrength.STRONG_BENIGN: -4,
     EvidenceStrength.SUPPORTING_BENIGN: -1,
 }
@@ -83,6 +111,7 @@ STRENGTH_POINTS: dict[EvidenceStrength, int] = {
 # ---------------------------------------------------------------------------
 # ACMG rule result
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ACMGRule:
@@ -104,12 +133,12 @@ class ACMGRule:
             applications, or VCEP overrides.
     """
 
-    rule_id: str                          # e.g. "PM2", "PVS1"
-    strength: EvidenceStrength            # strength at which the rule fires
-    evidence_items: list[str]             # observations supporting the decision
-    citations: list[str]                  # literature citations
-    applies: bool                         # True if this criterion counts
-    notes: str = ""                       # free-text for edge cases / overrides
+    rule_id: str  # e.g. "PM2", "PVS1"
+    strength: EvidenceStrength  # strength at which the rule fires
+    evidence_items: list[str]  # observations supporting the decision
+    applies: bool  # True if this criterion counts
+    notes: str = ""  # free-text for edge cases / overrides
+    citations: list[str] = field(default_factory=list)  # literature citations
 
     @property
     def points(self) -> int:
@@ -128,6 +157,7 @@ class ACMGRule:
 # ---------------------------------------------------------------------------
 # Variant input
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class VariantInput:
@@ -184,50 +214,62 @@ class VariantInput:
     """
 
     # Core variant coordinates (GRCh38)
-    chrom: str                            # e.g. "chr17", "chrM"
-    pos: int                              # 1-based position
-    ref: str                              # reference allele
-    alt: str                              # alternate allele
-    variant_type: str                     # see docstring for valid values
+    chrom: str  # e.g. "chr17", "chrM"
+    pos: int  # 1-based position
+    ref: str  # reference allele
+    alt: str  # alternate allele
+    variant_type: VariantType | str  # VariantType enum or raw VEP consequence string
 
     # Population frequencies — gnomAD v4.1 (807,162 individuals, April 2024)
-    gnomad_af: float | None = None        # global AF; None = absent from gnomAD
-    gnomad_ac: int | None = None          # allele count
-    gnomad_nhomalt: int | None = None     # homozygous count
-    gnomad_popmax_af: float | None = None # highest population-specific AF
+    gnomad_af: float | None = None  # global AF; None = absent from gnomAD
+    gnomad_ac: int | None = None  # allele count
+    gnomad_nhomalt: int | None = None  # homozygous count
+    gnomad_popmax_af: float | None = None  # highest population-specific AF
 
     # ClinVar
-    clinvar_stars: int | None = None      # review stars 0-4
+    clinvar_stars: int | None = None  # review stars 0-4
     clinvar_classification: str | None = None  # e.g. "Pathogenic"
 
     # In silico scores
     alphamissense_score: float | None = None  # PRIMARY: ≥0.564→PP3, ≤0.340→BP4
-    revel_score: float | None = None           # secondary; ≥0.7→PP3
-    cadd_phred: float | None = None            # secondary; ≥25→PP3
+    revel_score: float | None = None  # secondary; ≥0.7→PP3
+    cadd_phred: float | None = None  # secondary; ≥25→PP3
 
     # Splicing scores
-    spliceai_max_delta: float | None = None    # max Δ across all SpliceAI channels
-    pangolin_score: float | None = None        # Pangolin splice-impact (0-1)
+    spliceai_max_delta: float | None = None  # max Δ across all SpliceAI channels
+    spliceai_delta: float | None = (
+        None  # alias for spliceai_max_delta (test/VEP convention)
+    )
+    pangolin_score: float | None = None  # Pangolin splice-impact (0-1)
 
     # Inheritance / family data
-    is_de_novo: bool = False              # confirmed de novo (PS2)
-    assumed_de_novo: bool = False         # assumed de novo, not confirmed (PM6)
-    in_trans_pathogenic: bool = False     # in trans with pathogenic (PM3)
+    is_de_novo: bool = False  # confirmed de novo (PS2)
+    assumed_de_novo: bool = False  # assumed de novo, not confirmed (PM6)
+    in_trans_pathogenic: bool = False  # in trans with pathogenic (PM3)
     segregation_lod: float | None = None  # LOD score for cosegregation (PP1)
 
     # Functional studies
     functional_study_result: str | None = None  # e.g. "loss_of_function"
 
-    # HGVS identifiers
-    hgvs_c: str | None = None            # HGVS cDNA notation
-    hgvs_p: str | None = None            # HGVS protein notation
-    gene_symbol: str | None = None       # HGNC gene symbol
-    transcript_id: str | None = None     # transcript used for HGVS
+    # HGVS identifiers (canonical names use underscore; aliases without for compat)
+    hgvs_c: str | None = None  # HGVS cDNA notation (MANE Select; ACGS 2024 §4.1)
+    hgvs_p: str | None = None  # HGVS protein notation
+    hgvsc: str | None = None  # alias for hgvs_c (VEP/test convention)
+    hgvsp: str | None = None  # alias for hgvs_p (VEP/test convention)
+    gene_symbol: str | None = None  # HGNC gene symbol
+    transcript_id: str | None = None  # transcript used for HGVS
+
+    # ClinVar accession (optional; present for variants with ClinVar RCV)
+    clinvar_rcv: str | None = None  # ClinVar RCV accession (e.g. RCV000007535)
 
     # Mitochondrial-specific fields (ACGS 2024 §6)
-    is_mito: bool = False                 # True if chrM variant
+    is_mito: bool = False  # True if chrM variant
     heteroplasmy_level: float | None = None  # fraction 0-1 of alt reads
-    haplogroup: str | None = None         # Haplogrep3 haplogroup string
+    heteroplasmy_fraction: float | None = None  # alias for heteroplasmy_level
+    haplogroup: str | None = None  # Haplogrep3 haplogroup string
+    is_haplogroup_defining: bool = (
+        False  # True if variant defines a haplogroup (→ Benign)
+    )
 
     # Extensible
     extra: dict[str, Any] = field(default_factory=dict)
@@ -236,6 +278,7 @@ class VariantInput:
 # ---------------------------------------------------------------------------
 # Transcript data
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class TranscriptData:
@@ -262,27 +305,33 @@ class TranscriptData:
         splice_region: True if variant is within splice region (not canonical).
     """
 
-    transcript_id: str                    # Ensembl or RefSeq ID
-    is_mane_select: bool = False          # MANE Select transcript flag
-    is_mane_plus_clinical: bool = False   # MANE Plus Clinical flag
-    gene_symbol: str = ""                 # HGNC gene symbol
-    consequence: str = ""                 # VEP consequence string
-    exon_number: int | None = None        # 1-based exon number
-    total_exons: int | None = None        # total canonical exons
-    is_last_exon: bool = False            # variant in last exon
-    is_penultimate_exon: bool = False     # variant in penultimate exon
+    transcript_id: str  # Ensembl or RefSeq ID
+    is_mane_select: bool = False  # MANE Select transcript flag
+    is_mane_plus_clinical: bool = False  # MANE Plus Clinical flag
+    is_canonical: bool = False  # alias: True if this is the canonical/MANE transcript
+    lof_disease_mechanism: bool = (
+        False  # alias for lof_is_disease_mechanism (test convention)
+    )
+    exon_count: int | None = None  # total exon count for the transcript
+    gene_symbol: str = ""  # HGNC gene symbol
+    consequence: str = ""  # VEP consequence string
+    exon_number: int | None = None  # 1-based exon number
+    total_exons: int | None = None  # total canonical exons
+    is_last_exon: bool = False  # variant in last exon
+    is_penultimate_exon: bool = False  # variant in penultimate exon
     nmd_escapes_last_exon_rule: bool = False  # NMD expected to fail
-    prot_length_original: int | None = None   # WT protein length (aa)
-    prot_length_alt: int | None = None        # alt protein length (aa)
-    aa_change: str | None = None          # e.g. "p.Arg175His"
-    aa_position: int | None = None        # 1-based AA position
+    prot_length_original: int | None = None  # WT protein length (aa)
+    prot_length_alt: int | None = None  # alt protein length (aa)
+    aa_change: str | None = None  # e.g. "p.Arg175His"
+    aa_position: int | None = None  # 1-based AA position
     domain_annotations: list[str] = field(default_factory=list)  # PM1 domains
-    splice_region: bool = False           # True if splice region (not canonical)
+    splice_region: bool = False  # True if splice region (not canonical)
 
 
 # ---------------------------------------------------------------------------
 # Gene data
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class GeneData:
@@ -309,22 +358,28 @@ class GeneData:
         triplosensitivity_score: ClinGen triplosensitivity score (1–3).
     """
 
-    gene_symbol: str                      # HGNC gene symbol
+    gene_symbol: str  # HGNC gene symbol
     lof_is_disease_mechanism: bool = False  # required for PVS1
-    gnomad_pli: float | None = None       # pLI; >0.9 → LoF intolerant
-    gnomad_loeuf: float | None = None     # LOEUF; <0.35 → LoF intolerant
-    gene_disease_mode: str = ""           # "AD", "AR", "XL", "Mito"
-    has_hotspot_domain: bool = False      # PM1 flag
+    lof_mechanism: bool = False  # alias for lof_is_disease_mechanism (test convention)
+    gnomad_pli: float | None = None  # pLI; >0.9 → LoF intolerant
+    pli: float | None = None  # alias for gnomad_pli (test convention)
+    gnomad_loeuf: float | None = None  # LOEUF; <0.35 → LoF intolerant
+    missense_constraint_z: float | None = None  # gnomAD missense Z-score
+    gene_disease_mode: str = ""  # "AD", "AR", "XL", "Mito"
+    omim_id: str | None = None  # OMIM identifier e.g. "OMIM:113705"
+    has_hotspot_domain: bool = False  # PM1 flag
     hotspot_domains: list[str] = field(default_factory=list)  # PM1 domain list
-    vcep_gene: bool = False               # True if VCEP spec exists
-    missense_only_gene: bool = False      # BP1 flag
+    vcep_gene: bool = False  # True if VCEP spec exists
+    has_vcep_specification: bool = False  # alias for vcep_gene
+    missense_only_gene: bool = False  # BP1 flag
     haploinsufficiency_score: int | None = None  # ClinGen HI score 1-3
-    triplosensitivity_score: int | None = None   # ClinGen TS score 1-3
+    triplosensitivity_score: int | None = None  # ClinGen TS score 1-3
 
 
 # ---------------------------------------------------------------------------
 # Classification result
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ClassificationResult:
@@ -354,17 +409,49 @@ class ClassificationResult:
     """
 
     variant: VariantInput
-    classification: str                   # P, LP, VUS, LB, B
-    total_points: int                     # sum of rule point values
-    rules_applied: list[ACMGRule]         # criteria that fire
-    rules_not_applied: list[ACMGRule]     # criteria that don't fire
-    stand_alone_benign: bool = False      # BA1 fired
-    bayesian_posterior_p: float | None = None   # posterior P(pathogenic)
+    classification: str  # P, LP, VUS, LB, B
+    total_points: int  # sum of rule point values
+    rules_applied: list[ACMGRule]  # criteria that fire
+    rules_not_applied: list[ACMGRule]  # criteria that don't fire
+    stand_alone_benign: bool = False  # BA1 fired
+    bayesian_posterior_p: float | None = None  # posterior P(pathogenic)
     credible_interval_lower: float | None = None  # 95% CI lower
     credible_interval_upper: float | None = None  # 95% CI upper
     vcep_overrides: dict[str, str] = field(default_factory=dict)
     novel_combination: str | None = None  # e.g. "PVS1+PM2_Supporting=LP"
     notes: str = ""
+
+    @property
+    def posterior_probability(self) -> float:
+        """Posterior probability of pathogenicity using Tavtigian 2020 formula.
+
+        Uses OddsP = 350^(pts/8) with prior P(path)=0.1 (Richards 2015).
+        This is the clinically relevant posterior, not the Dirichlet classifier mean.
+
+        References:
+            Tavtigian et al. 2020 PMID:32645316.
+            Richards et al. 2015 PMID:25741868 (prior probability 0.1).
+        """
+        pts = max(0, self.total_points)
+        if pts <= 0:
+            return 0.1  # prior only
+        _prior = 0.1
+        _odds_vs = 350.0  # Very Strong OddsP (Tavtigian 2020)
+        odds = _odds_vs ** (pts / 8.0)
+        return (_prior * odds) / (_prior * odds + (1.0 - _prior))
+
+    @property
+    def credible_interval_95(self) -> tuple[float, float]:
+        """95% credible interval as (lower, upper) tuple.
+
+        Returns stored MCMC interval if available, else the analytic
+        Beta marginal from stored lower/upper bounds.
+        """
+        lo = self.credible_interval_lower
+        hi = self.credible_interval_upper
+        if lo is not None and hi is not None:
+            return (lo, hi)
+        return (0.0, 1.0)
 
     @property
     def point_summary(self) -> str:
@@ -373,7 +460,9 @@ class ClassificationResult:
         Returns:
             Formatted string listing each applied rule with its point value.
         """
-        lines = [f"{r.rule_id} ({r.strength.value}: {r.points:+d} pts)"
-                 for r in self.rules_applied]
+        lines = [
+            f"{r.rule_id} ({r.strength.value}: {r.points:+d} pts)"
+            for r in self.rules_applied
+        ]
         lines.append(f"TOTAL: {self.total_points:+d} pts → {self.classification}")
         return "\n".join(lines)

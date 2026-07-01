@@ -11,17 +11,19 @@ Validates:
 
 from __future__ import annotations
 
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
 import pytest
-from unittest.mock import AsyncMock, patch
 
 from annotation.gnomad_client import (
     GNOMAD_GENOME_DATASET,
     PM2_SUPPORTING_THRESHOLD,
-    AncestryFrequency,
     GnomADClient,
     GnomADData,
+    _safe_float,
+    _safe_int,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -47,7 +49,13 @@ MOCK_RARE_VARIANT_RESPONSE = {
         "af": 0.000005,
         "homozygote_count": 0,
         "populations": [
-            {"id": "nfe", "ac": 1, "an": 120000, "af": 0.0000083, "homozygote_count": 0},
+            {
+                "id": "nfe",
+                "ac": 1,
+                "an": 120000,
+                "af": 0.0000083,
+                "homozygote_count": 0,
+            },
             {"id": "afr", "ac": 0, "an": 40000, "af": 0.0, "homozygote_count": 0},
             {"id": "eas", "ac": 0, "an": 20000, "af": 0.0, "homozygote_count": 0},
         ],
@@ -76,8 +84,20 @@ MOCK_COMMON_VARIANT_RESPONSE = {
         "af": 0.01,
         "homozygote_count": 35,
         "populations": [
-            {"id": "nfe", "ac": 5000, "an": 450000, "af": 0.0111, "homozygote_count": 25},
-            {"id": "afr", "ac": 2500, "an": 200000, "af": 0.0125, "homozygote_count": 10},
+            {
+                "id": "nfe",
+                "ac": 5000,
+                "an": 450000,
+                "af": 0.0111,
+                "homozygote_count": 25,
+            },
+            {
+                "id": "afr",
+                "ac": 2500,
+                "an": 200000,
+                "af": 0.0125,
+                "homozygote_count": 10,
+            },
         ],
         "filters": [],
     },
@@ -95,7 +115,9 @@ class TestAbsentVariant:
     """Test behaviour when a variant is not present in gnomAD v4.1."""
 
     @pytest.mark.asyncio
-    async def test_absent_variant_pm2_supporting_true(self, client: GnomADClient) -> None:
+    async def test_absent_variant_pm2_supporting_true(
+        self, client: GnomADClient
+    ) -> None:
         """Absent variant should set pm2_supporting = True."""
         with patch.object(client, "_query_api", new_callable=AsyncMock) as mock_api:
             mock_api.return_value = None  # Variant not in gnomAD
@@ -152,7 +174,9 @@ class TestRareVariant:
         assert data.af_genome == pytest.approx(0.000005)
 
     @pytest.mark.asyncio
-    async def test_rare_variant_population_breakdown(self, client: GnomADClient) -> None:
+    async def test_rare_variant_population_breakdown(
+        self, client: GnomADClient
+    ) -> None:
         """Population-stratified AFs should be populated from genome data."""
         with patch.object(client, "_query_api", new_callable=AsyncMock) as mock_api:
             mock_api.return_value = MOCK_RARE_VARIANT_RESPONSE
@@ -172,7 +196,9 @@ class TestCommonVariant:
     """Test AF lookups for common variants above PM2_Supporting threshold."""
 
     @pytest.mark.asyncio
-    async def test_common_variant_pm2_not_supporting(self, client: GnomADClient) -> None:
+    async def test_common_variant_pm2_not_supporting(
+        self, client: GnomADClient
+    ) -> None:
         """Common variant (AF >> 0.0001) should NOT trigger PM2_Supporting."""
         with patch.object(client, "_query_api", new_callable=AsyncMock) as mock_api:
             mock_api.return_value = MOCK_COMMON_VARIANT_RESPONSE
@@ -254,4 +280,177 @@ class TestConstants:
 
     def test_dataset_is_v4(self) -> None:
         """Default dataset should reference gnomAD v4."""
-        assert "r4" in GNOMAD_GENOME_DATASET.lower() or "v4" in GNOMAD_GENOME_DATASET.lower()
+        assert (
+            "r4" in GNOMAD_GENOME_DATASET.lower()
+            or "v4" in GNOMAD_GENOME_DATASET.lower()
+        )
+
+
+# ---------------------------------------------------------------------------
+# Tests for HTTP error handling in get_allele_frequency
+# ---------------------------------------------------------------------------
+
+
+class TestGetAlleleFrequencyHttpError:
+    """Tests for the httpx.HTTPError catch branch in get_allele_frequency()."""
+
+    @pytest.mark.asyncio
+    async def test_http_error_returns_empty_result_with_pm2_supporting(
+        self, client: GnomADClient
+    ) -> None:
+        with patch.object(client, "_query_api", new_callable=AsyncMock) as mock_api:
+            mock_api.side_effect = httpx.HTTPError("connection reset")
+            data = await client.get_allele_frequency("chr17", 43094692, "G", "A")
+
+        assert data.pm2_supporting is True
+        assert data.af is None
+        assert data.note == "Variant absent from gnomAD v4.1"
+
+
+# ---------------------------------------------------------------------------
+# Tests for get_max_af_across_populations
+# ---------------------------------------------------------------------------
+
+
+class TestGetMaxAfAcrossPopulations:
+    """Tests for GnomADClient.get_max_af_across_populations()."""
+
+    @pytest.mark.asyncio
+    async def test_returns_af_when_no_population_breakdown(
+        self, client: GnomADClient
+    ) -> None:
+        """When by_ancestry is empty, falls back to the overall AF."""
+        empty_data = GnomADData(
+            chrom="chr1", pos=1, ref="A", alt="T", af=0.05, by_ancestry={}
+        )
+        with patch.object(
+            client, "get_allele_frequency", new_callable=AsyncMock
+        ) as mock_get:
+            mock_get.return_value = empty_data
+            result = await client.get_max_af_across_populations(
+                "chr1", 1, "A", "T"
+            )
+
+        assert result == pytest.approx(0.05)
+
+    @pytest.mark.asyncio
+    async def test_returns_max_across_populations(
+        self, client: GnomADClient
+    ) -> None:
+        """Returns the maximum AF among the by_ancestry population entries."""
+        from annotation.gnomad_client import AncestryFrequency
+
+        data = GnomADData(
+            chrom="chr1",
+            pos=1,
+            ref="A",
+            alt="T",
+            af=0.01,
+            by_ancestry={
+                "nfe": AncestryFrequency(population="nfe", af=0.01, ac=1, an=100),
+                "afr": AncestryFrequency(population="afr", af=0.08, ac=8, an=100),
+            },
+        )
+        with patch.object(
+            client, "get_allele_frequency", new_callable=AsyncMock
+        ) as mock_get:
+            mock_get.return_value = data
+            result = await client.get_max_af_across_populations(
+                "chr1", 1, "A", "T"
+            )
+
+        assert result == pytest.approx(0.08)
+
+
+# ---------------------------------------------------------------------------
+# Tests for _query_api real HTTP body
+# ---------------------------------------------------------------------------
+
+
+class TestQueryApiRealBody:
+    """Tests for the actual (unmocked) _query_api implementation."""
+
+    @pytest.mark.asyncio
+    async def test_successful_query_returns_variant_dict(
+        self, client: GnomADClient
+    ) -> None:
+        with patch("httpx.AsyncClient.post") as mock_post:
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_response.json.return_value = {
+                "data": {"variant": MOCK_RARE_VARIANT_RESPONSE}
+            }
+            mock_post.return_value = mock_response
+
+            result = await client._query_api("17-43094692-G-A")
+
+        assert result == MOCK_RARE_VARIANT_RESPONSE
+
+    @pytest.mark.asyncio
+    async def test_graphql_errors_key_returns_none(
+        self, client: GnomADClient
+    ) -> None:
+        """A GraphQL 'errors' key (not an HTTP error) should yield None."""
+        with patch("httpx.AsyncClient.post") as mock_post:
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_response.json.return_value = {
+                "errors": [{"message": "Variant not found"}]
+            }
+            mock_post.return_value = mock_response
+
+            result = await client._query_api("17-99999999-G-A")
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_missing_data_key_returns_none(
+        self, client: GnomADClient
+    ) -> None:
+        """A response with no 'data' key should not raise; returns None."""
+        with patch("httpx.AsyncClient.post") as mock_post:
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_response.json.return_value = {}
+            mock_post.return_value = mock_response
+
+            result = await client._query_api("17-99999999-G-A")
+
+        assert result is None
+
+
+# ---------------------------------------------------------------------------
+# Tests for _safe_float / _safe_int exception branches
+# ---------------------------------------------------------------------------
+
+
+class TestSafeConversionHelpers:
+    """Tests for _safe_float() and _safe_int() including error branches."""
+
+    def test_safe_float_valid_string(self) -> None:
+        assert _safe_float("0.5") == pytest.approx(0.5)
+
+    def test_safe_float_none_returns_none(self) -> None:
+        assert _safe_float(None) is None
+
+    def test_safe_float_invalid_string_returns_none(self) -> None:
+        """A ValueError during float() conversion is caught."""
+        assert _safe_float("not_a_number") is None
+
+    def test_safe_float_uncoercible_type_returns_none(self) -> None:
+        """A TypeError during float() conversion (e.g. a list) is caught."""
+        assert _safe_float([1, 2, 3]) is None
+
+    def test_safe_int_valid_string(self) -> None:
+        assert _safe_int("42") == 42
+
+    def test_safe_int_none_returns_none(self) -> None:
+        assert _safe_int(None) is None
+
+    def test_safe_int_invalid_string_returns_none(self) -> None:
+        """A ValueError during int() conversion is caught."""
+        assert _safe_int("not_a_number") is None
+
+    def test_safe_int_uncoercible_type_returns_none(self) -> None:
+        """A TypeError during int() conversion (e.g. a dict) is caught."""
+        assert _safe_int({"a": 1}) is None

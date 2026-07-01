@@ -41,12 +41,12 @@ from bayesacmg.models import ACMGRule, EvidenceStrength, VariantInput
 _MITO_BA1_HAPLOGROUP_THRESHOLD = 0.05  # >5% within haplogroup → strong benign
 
 # Mito PM2: variants absent from or very rare in gnomAD v3.1 mito genome
-_MITO_PM2_AF_THRESHOLD = 0.0001         # <0.01% in gnomAD mito data; ACGS 2024 §6
+_MITO_PM2_AF_THRESHOLD = 0.0001  # <0.01% in gnomAD mito data; ACGS 2024 §6
 
 # Heteroplasmy thresholds — ACGS 2024 §6
-_HETEROPLASMY_HIGH = 0.60     # >60% — likely to cause disease
-_HETEROPLASMY_MODERATE = 0.20 # 20-60% — moderate level
-_HETEROPLASMY_LOW = 0.01      # <1% — likely passenger/artefact
+_HETEROPLASMY_HIGH = 0.60  # >60% — likely to cause disease
+_HETEROPLASMY_MODERATE = 0.20  # 20-60% — moderate level
+_HETEROPLASMY_LOW = 0.01  # <1% — likely passenger/artefact
 
 
 @dataclass
@@ -71,7 +71,7 @@ class MitoHaploData:
 
 def rule_mito_haplogroup_defining(
     variant: VariantInput,
-    haplo_data: MitoHaploData,
+    haplo_data: MitoHaploData | None = None,
 ) -> ACMGRule:
     """BA1-equivalent for haplogroup-defining mito variants.
 
@@ -96,6 +96,10 @@ def rule_mito_haplogroup_defining(
     Raises:
         ValueError: If ``variant.is_mito`` is False.
     """
+    if haplo_data is None:
+        haplo_data = MitoHaploData(
+            is_haplogroup_defining=getattr(variant, "is_haplogroup_defining", False),
+        )
     citations = [
         "ACGS 2024 v1.2 §6",
         "Richards et al. 2015 PMID:25741868",
@@ -140,7 +144,7 @@ def rule_mito_haplogroup_defining(
 
 def rule_mito_ba1(
     variant: VariantInput,
-    haplo_data: MitoHaploData,
+    haplo_data: MitoHaploData | None = None,
 ) -> ACMGRule:
     """BA1 for mitochondrial variants — mito-specific thresholds.
 
@@ -165,6 +169,10 @@ def rule_mito_ba1(
         MITOMAP: https://www.mitomap.org
         gnomAD v3.1 mitogenome data.
     """
+    if haplo_data is None:
+        haplo_data = MitoHaploData(
+            is_haplogroup_defining=getattr(variant, "is_haplogroup_defining", False),
+        )
     citations = [
         "ACGS 2024 v1.2 §6",
         "Richards et al. 2015 PMID:25741868",
@@ -181,7 +189,10 @@ def rule_mito_ba1(
         )
 
     # MITOMAP "Confirmed Polymorphism" → strong benign evidence
-    if haplo_data.mitomap_status and "polymorphism" in haplo_data.mitomap_status.lower():
+    if (
+        haplo_data.mitomap_status
+        and "polymorphism" in haplo_data.mitomap_status.lower()
+    ):
         return ACMGRule(
             rule_id="BA1_MITO",
             strength=EvidenceStrength.STAND_ALONE,
@@ -194,8 +205,10 @@ def rule_mito_ba1(
         )
 
     # High haplogroup-specific frequency → benign signal (not stand-alone per ACGS 2024 §6)
-    if (haplo_data.haplogroup_frequency is not None
-            and haplo_data.haplogroup_frequency > _MITO_BA1_HAPLOGROUP_THRESHOLD):
+    if (
+        haplo_data.haplogroup_frequency is not None
+        and haplo_data.haplogroup_frequency > _MITO_BA1_HAPLOGROUP_THRESHOLD
+    ):
         return ACMGRule(
             rule_id="BA1_MITO",
             strength=EvidenceStrength.STRONG_BENIGN,  # Strong (not STAND_ALONE) per ACGS 2024 §6
@@ -269,7 +282,9 @@ def rule_mito_pm2(
         return ACMGRule(
             rule_id="PM2_MITO",
             strength=EvidenceStrength.SUPPORTING,
-            evidence_items=["Haplogroup-defining variant — PM2 does not apply; classify as Benign"],
+            evidence_items=[
+                "Haplogroup-defining variant — PM2 does not apply; classify as Benign"
+            ],
             citations=citations,
             applies=False,
             notes="Haplogroup-defining status takes precedence; see rule_mito_haplogroup_defining()",
@@ -356,7 +371,9 @@ def rule_mito_heteroplasmy_level(
             applies=False,
         )
 
-    level = variant.heteroplasmy_level
+    level = variant.heteroplasmy_level or getattr(
+        variant, "heteroplasmy_fraction", None
+    )
     if level is None:
         return ACMGRule(
             rule_id="MITO_HETEROPLASMY",
@@ -367,7 +384,7 @@ def rule_mito_heteroplasmy_level(
             notes="Heteroplasmy data required for full mito classification (ACGS 2024 §6)",
         )
 
-    if level > _HETEROPLASMY_HIGH:        # >60%; ACGS 2024 §6
+    if level > _HETEROPLASMY_HIGH:  # >60%; ACGS 2024 §6
         return ACMGRule(
             rule_id="MITO_HETEROPLASMY",
             strength=EvidenceStrength.SUPPORTING,
@@ -380,7 +397,7 @@ def rule_mito_heteroplasmy_level(
             notes="High heteroplasmy supports pathogenic classification",
         )
 
-    if level >= _HETEROPLASMY_MODERATE:   # 20-60%; ACGS 2024 §6
+    if level >= _HETEROPLASMY_MODERATE:  # 20-60%; ACGS 2024 §6
         return ACMGRule(
             rule_id="MITO_HETEROPLASMY",
             strength=EvidenceStrength.SUPPORTING,
@@ -393,7 +410,7 @@ def rule_mito_heteroplasmy_level(
             notes="Moderate heteroplasmy: clinically relevant but incomplete penetrance possible",
         )
 
-    if level >= _HETEROPLASMY_LOW:        # 1-20%; ACGS 2024 §6
+    if level >= _HETEROPLASMY_LOW:  # 1-20%; ACGS 2024 §6
         return ACMGRule(
             rule_id="MITO_HETEROPLASMY",
             strength=EvidenceStrength.SUPPORTING,

@@ -38,10 +38,8 @@ The file uses 1-based coordinates; column layout:
 from __future__ import annotations
 
 import logging
-import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 import httpx
 
@@ -87,8 +85,8 @@ class AlphaMissenseResult:
     pos: int
     ref: str
     alt: str
-    score: Optional[float]
-    am_class: Optional[str]
+    score: float | None
+    am_class: str | None
     evidence_code: str
 
 
@@ -112,10 +110,10 @@ class AlphaMissenseClient:
 
     def __init__(
         self,
-        tsv_path: Optional[str | Path] = None,
+        tsv_path: str | Path | None = None,
         http_timeout: float = 10.0,
     ) -> None:
-        self._tsv_path: Optional[Path] = Path(tsv_path) if tsv_path else None
+        self._tsv_path: Path | None = Path(tsv_path) if tsv_path else None
         self._http_timeout = http_timeout
         self._pysam_available = self._check_pysam()
 
@@ -146,8 +144,8 @@ class AlphaMissenseClient:
         # Normalise chromosome name to "chr"-prefixed form
         chrom = _normalise_chrom(chrom)
 
-        score: Optional[float] = None
-        am_class: Optional[str] = None
+        score: float | None = None
+        am_class: str | None = None
 
         if self._tsv_path and self._tsv_path.exists() and self._pysam_available:
             score, am_class = self._tabix_lookup(chrom, pos, ref, alt)
@@ -175,7 +173,7 @@ class AlphaMissenseClient:
         pos: int,
         ref: str,
         alt: str,
-    ) -> tuple[Optional[float], Optional[str]]:
+    ) -> tuple[float | None, str | None]:
         """Query the tabix-indexed TSV for a specific variant.
 
         Args:
@@ -216,7 +214,7 @@ class AlphaMissenseClient:
         pos: int,
         ref: str,
         alt: str,
-    ) -> tuple[Optional[float], Optional[str]]:
+    ) -> tuple[float | None, str | None]:
         """Retrieve score from community REST API fallback.
 
         Args:
@@ -240,7 +238,9 @@ class AlphaMissenseClient:
                 am_class = data.get("am_class")
                 return (float(score) if score is not None else None), am_class
         except httpx.HTTPError as exc:
-            logger.warning("AlphaMissense HTTP lookup failed for %s:%d: %s", chrom, pos, exc)
+            logger.warning(
+                "AlphaMissense HTTP lookup failed for %s:%d: %s", chrom, pos, exc
+            )
             return None, None
 
     # ------------------------------------------------------------------
@@ -267,7 +267,7 @@ class AlphaMissenseClient:
 # ---------------------------------------------------------------------------
 
 
-def classify_am_score(score: Optional[float]) -> str:
+def classify_am_score(score: float | None) -> str:
     """Map an AlphaMissense score to a ClinGen SVI 2024 ACMG evidence code.
 
     Thresholds from ClinGen SVI Working Group 2024 calibration:

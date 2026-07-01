@@ -315,6 +315,13 @@ class TestValidateTaskStructure:
         errors = validate_task_structure(task)
         assert any("VRS" in e for e in errors)
 
+    def test_invalid_intent_flagged(self):
+        task = {"resourceType": "Task", "id": "123", "status": "requested",
+                "intent": "not-a-valid-intent",
+                "code": {}, "input": [{}]}
+        errors = validate_task_structure(task)
+        assert any("intent" in e for e in errors)
+
     def test_empty_input_list_flagged(self, vus_to_pathogenic_event):
         task = create_recontact_task(vus_to_pathogenic_event)
         task["input"] = []

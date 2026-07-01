@@ -10,10 +10,12 @@ Uses synthetic ClinVar VCF data to verify:
 from __future__ import annotations
 
 import gzip
+import hashlib
 import tempfile
 from datetime import date, datetime
 from pathlib import Path
 from typing import Generator
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -24,10 +26,12 @@ from reclassification.clinvar_diff import (
     _parse_info,
     _parse_review_stars,
     _requires_recontact,
+    _verify_md5,
     diff_variants,
+    download_latest_clinvar_vcf,
     find_reclassified_variants,
 )
-from reclassification.models import ClinicalSignificance
+from reclassification.models import ClinicalSignificance, VUSReviewSchedule
 
 
 # ---------------------------------------------------------------------------
@@ -304,6 +308,13 @@ class TestIterVcfRecords:
         records = list(_iter_vcf_records(vcf_path))
         assert records[0].key == "chr7:117548628:CT:C"
 
+    def test_malformed_line_with_too_few_fields_skipped(self):
+        """Data lines with fewer than 8 tab-separated fields are skipped."""
+        malformed_line = "chr1\t100\trs123\n"  # Only 3 fields
+        vcf_path = _write_vcf([malformed_line])
+        records = list(_iter_vcf_records(vcf_path))
+        assert len(records) == 0
+
 
 # ---------------------------------------------------------------------------
 # Tests: diff_variants
@@ -489,3 +500,188 @@ class TestFindReclassifiedVariants:
         # Should not raise — should silently skip with a warning
         events = find_reclassified_variants(local, clinvar_vcf)
         assert len(events) == 0
+
+    def test_local_variant_chrom_without_prefix_is_normalised(self):
+        """Local variant chrom lacking 'chr' prefix should still match ClinVar."""
+        local = [
+            self._make_local_variant(
+                chrom="17", classification="Uncertain significance"
+            )
+        ]
+        clinvar_vcf = _write_vcf([
+            _make_vcf_line(
+                chrom="chr17", pos=43094692, ref="G", alt="A", clnsig="Pathogenic"
+            )
+        ])
+        events = find_reclassified_variants(local, clinvar_vcf)
+        assert len(events) == 1
+        assert events[0].variant_id == "v001"
+
+    def test_invalid_report_date_defaults_to_today(self):
+        """Unparseable report_date should fall back to today's date, not raise."""
+        local = [
+            self._make_local_variant(
+                classification="Uncertain significance",
+                report_date="not-a-valid-date",
+            )
+        ]
+        clinvar_vcf = _write_vcf([
+            _make_vcf_line(clnsig="Pathogenic")
+        ])
+        events = find_reclassified_variants(local, clinvar_vcf)
+        assert len(events) == 1
+
+    def test_missing_report_date_defaults_to_today(self):
+        """A variant dict without a report_date key should still succeed."""
+        local = [
+            {
+                "variant_id": "v002",
+                "chrom": "chr17",
+                "pos": 43094692,
+                "ref": "G",
+                "alt": "A",
+                "classification": "Uncertain significance",
+                # no "report_date" key at all
+            }
+        ]
+        clinvar_vcf = _write_vcf([
+            _make_vcf_line(clnsig="Pathogenic")
+        ])
+        events = find_reclassified_variants(local, clinvar_vcf)
+        assert len(events) == 1
+
+
+# ---------------------------------------------------------------------------
+# Tests: _verify_md5
+# ---------------------------------------------------------------------------
+
+
+class TestVerifyMd5:
+    """Tests for MD5 checksum verification."""
+
+    def test_matching_checksum_returns_true(self, tmp_path: Path):
+        f = tmp_path / "data.bin"
+        content = b"clinvar test payload"
+        f.write_bytes(content)
+        expected = hashlib.md5(content).hexdigest()
+        assert _verify_md5(f, expected) is True
+
+    def test_mismatched_checksum_returns_false(self, tmp_path: Path):
+        f = tmp_path / "data.bin"
+        f.write_bytes(b"clinvar test payload")
+        assert _verify_md5(f, "0" * 32) is False
+
+    def test_checksum_with_trailing_filename_is_handled(self, tmp_path: Path):
+        """MD5 sidecar files often have 'hash  filename' format."""
+        f = tmp_path / "data.bin"
+        content = b"another payload"
+        f.write_bytes(content)
+        expected = hashlib.md5(content).hexdigest()
+        assert _verify_md5(f, f"{expected}  data.bin\n") is True
+
+
+# ---------------------------------------------------------------------------
+# Tests: download_latest_clinvar_vcf
+# ---------------------------------------------------------------------------
+
+
+def _mock_ftp_class(content: bytes, md5_content: bytes | None = None) -> MagicMock:
+    """Build a mock ftplib.FTP class usable as `with ftplib.FTP(host) as ftp:`."""
+    mock_ftp_class = MagicMock()
+    mock_instance = mock_ftp_class.return_value
+    mock_instance.__enter__.return_value = mock_instance
+    mock_instance.__exit__.return_value = False
+
+    def retrbinary(cmd, callback):
+        if cmd.strip().endswith(".md5"):
+            callback(md5_content if md5_content is not None else b"")
+        else:
+            callback(content)
+
+    mock_instance.retrbinary.side_effect = retrbinary
+    return mock_ftp_class
+
+
+class TestDownloadLatestClinvarVcf:
+    """Tests for the FTP download + MD5 verification pipeline (mocked FTP)."""
+
+    def test_download_without_checksum_verification(self, tmp_path: Path):
+        content = b"##fileformat=VCFv4.1\nchr1\t100\t.\tA\tT\t.\t.\tCLNSIG=Pathogenic\n"
+        mock_class = _mock_ftp_class(content)
+
+        with patch("reclassification.clinvar_diff.ftplib.FTP", mock_class):
+            result = download_latest_clinvar_vcf(
+                ftp_url="ftp://ftp.ncbi.nlm.nih.gov/pub/clinvar/vcf_GRCh38/clinvar.vcf.gz",
+                dest_dir=tmp_path,
+                verify_checksum=False,
+            )
+
+        assert result == tmp_path / "clinvar.vcf.gz"
+        assert result.read_bytes() == content
+        mock_class.return_value.login.assert_called_once()
+
+    def test_download_with_valid_checksum(self, tmp_path: Path):
+        content = b"vcf file content for md5 check"
+        md5_hex = hashlib.md5(content).hexdigest()
+        md5_content = f"{md5_hex}  clinvar.vcf.gz\n".encode()
+        mock_class = _mock_ftp_class(content, md5_content)
+
+        with patch("reclassification.clinvar_diff.ftplib.FTP", mock_class):
+            result = download_latest_clinvar_vcf(dest_dir=tmp_path, verify_checksum=True)
+
+        assert result.read_bytes() == content
+
+    def test_download_with_invalid_checksum_raises(self, tmp_path: Path):
+        content = b"vcf file content"
+        md5_content = b"deadbeefdeadbeefdeadbeefdeadbeef  clinvar.vcf.gz\n"
+        mock_class = _mock_ftp_class(content, md5_content)
+
+        with patch("reclassification.clinvar_diff.ftplib.FTP", mock_class):
+            with pytest.raises(ValueError, match="MD5"):
+                download_latest_clinvar_vcf(dest_dir=tmp_path, verify_checksum=True)
+
+    def test_download_with_dest_dir_none_uses_tempdir(self):
+        content = b"vcf data"
+        mock_class = _mock_ftp_class(content)
+
+        with patch("reclassification.clinvar_diff.ftplib.FTP", mock_class):
+            result = download_latest_clinvar_vcf(verify_checksum=False)
+
+        try:
+            assert result.exists()
+            assert result.read_bytes() == content
+        finally:
+            result.unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# Tests: VUSReviewSchedule.is_overdue (models.py)
+# ---------------------------------------------------------------------------
+
+
+class TestVUSReviewScheduleIsOverdue:
+    """Tests for the VUSReviewSchedule.is_overdue computed property."""
+
+    def _make_review(self, due_date: date, completed_at=None) -> VUSReviewSchedule:
+        review = VUSReviewSchedule()
+        review.variant_id = "chr17:43094692:G:A"
+        review.patient_gms_id = "GMS-0001"
+        review.initial_classification_date = date(2022, 1, 1)
+        review.review_due_date = due_date
+        review.review_completed_at = completed_at
+        return review
+
+    def test_past_due_and_not_completed_is_overdue(self):
+        review = self._make_review(due_date=date(2000, 1, 1))
+        assert review.is_overdue is True
+
+    def test_future_due_date_is_not_overdue(self):
+        review = self._make_review(due_date=date(2999, 1, 1))
+        assert review.is_overdue is False
+
+    def test_past_due_but_completed_is_not_overdue(self):
+        review = self._make_review(
+            due_date=date(2000, 1, 1),
+            completed_at=datetime(2001, 1, 1),
+        )
+        assert review.is_overdue is False

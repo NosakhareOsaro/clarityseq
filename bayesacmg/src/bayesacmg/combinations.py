@@ -39,16 +39,21 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from bayesacmg.models import ACMGRule, ClassificationResult, EvidenceStrength, VariantInput
+from bayesacmg.models import (
+    ACMGRule,
+    ClassificationResult,
+    EvidenceStrength,
+    VariantInput,
+)
 
 # ---------------------------------------------------------------------------
 # Point thresholds — Tavtigian et al. 2020 PMID:32645316
 # ---------------------------------------------------------------------------
 
-_PATHOGENIC_THRESHOLD = 10        # ≥10 pts → Pathogenic
+_PATHOGENIC_THRESHOLD = 10  # ≥10 pts → Pathogenic
 _LIKELY_PATHOGENIC_THRESHOLD = 6  # ≥6 pts → Likely Pathogenic
-_LIKELY_BENIGN_THRESHOLD = -6     # ≤-6 pts → Likely Benign
-_BENIGN_THRESHOLD = -10           # ≤-10 pts → Benign
+_LIKELY_BENIGN_THRESHOLD = -6  # ≤-6 pts → Likely Benign
+_BENIGN_THRESHOLD = -10  # ≤-10 pts → Benign
 
 
 @dataclass
@@ -109,10 +114,13 @@ def evaluate_pvs1_pm2_supporting(
         Tavtigian et al. 2020 PMID:32645316 — point thresholds.
     """
     pvs1_rules = [r for r in rules if r.rule_id == "PVS1" and r.applies]
-    pm2_rules = [r for r in rules
-                 if r.rule_id in {"PM2", "PM2_MITO"}
-                 and r.applies
-                 and r.strength == EvidenceStrength.SUPPORTING]
+    pm2_rules = [
+        r
+        for r in rules
+        if r.rule_id in {"PM2", "PM2_MITO"}
+        and r.applies
+        and r.strength == EvidenceStrength.SUPPORTING
+    ]
 
     if not pvs1_rules or not pm2_rules:
         return CombinationResult(
@@ -141,7 +149,7 @@ def evaluate_pvs1_pm2_supporting(
     return CombinationResult(
         combination_name="PVS1+PM2_Supporting=LP",
         applies=True,
-        resulting_classification="Likely_Pathogenic",
+        resulting_classification="Likely Pathogenic",
         total_points=total,
         rules_contributing=[pvs1.rule_id, pm2.rule_id],
         explanation=explanation,
@@ -175,24 +183,24 @@ def classify_by_points(
         stand_alone_benign: True if BA1 fired → direct Benign regardless of pts.
 
     Returns:
-        Classification string: one of ``"Pathogenic"``, ``"Likely_Pathogenic"``,
-        ``"VUS"``, ``"Likely_Benign"``, ``"Benign"``.
+        Classification string: one of ``"Pathogenic"``, ``"Likely Pathogenic"``,
+        ``"VUS"``, ``"Likely Benign"``, ``"Benign"``.
 
     References:
         Tavtigian et al. 2020 PMID:32645316 — point thresholds.
         Richards et al. 2015 PMID:25741868 — classification categories.
     """
     if stand_alone_benign:
-        return "Benign"                                   # BA1: direct Benign; Richards 2015
+        return "Benign"  # BA1: direct Benign; Richards 2015
 
-    if total_points >= _PATHOGENIC_THRESHOLD:             # ≥10; Tavtigian 2020 PMID:32645316
+    if total_points >= _PATHOGENIC_THRESHOLD:  # ≥10; Tavtigian 2020 PMID:32645316
         return "Pathogenic"
-    if total_points >= _LIKELY_PATHOGENIC_THRESHOLD:      # ≥6; Tavtigian 2020 PMID:32645316
-        return "Likely_Pathogenic"
-    if total_points <= _BENIGN_THRESHOLD:                 # ≤-10; Tavtigian 2020 PMID:32645316
+    if total_points >= _LIKELY_PATHOGENIC_THRESHOLD:  # ≥6; Tavtigian 2020 PMID:32645316
+        return "Likely Pathogenic"
+    if total_points <= _BENIGN_THRESHOLD:  # ≤-10; Tavtigian 2020 PMID:32645316
         return "Benign"
-    if total_points <= _LIKELY_BENIGN_THRESHOLD:          # ≤-6; Tavtigian 2020 PMID:32645316
-        return "Likely_Benign"
+    if total_points <= _LIKELY_BENIGN_THRESHOLD:  # ≤-6; Tavtigian 2020 PMID:32645316
+        return "Likely Benign"
     return "VUS"
 
 
@@ -264,7 +272,9 @@ def classify_variant(
         if combos:
             novel_combo = combos[0].combination_name
 
-        classification = classify_by_points(total_points, stand_alone_benign=stand_alone)
+        classification = classify_by_points(
+            total_points, stand_alone_benign=stand_alone
+        )
 
     return ClassificationResult(
         variant=variant,
@@ -272,6 +282,61 @@ def classify_variant(
         total_points=total_points,
         rules_applied=applied,
         rules_not_applied=not_applied,
+        stand_alone_benign=stand_alone,
+        novel_combination=novel_combo,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Convenience aliases used by tests and external callers
+# ---------------------------------------------------------------------------
+
+
+def compute_total_points(rules: list[ACMGRule]) -> int:
+    """Return the total point score for a list of ACMGRule objects.
+
+    Only rules where ``applies=True`` contribute points.  Convenience
+    wrapper used in tests and the CLI.
+    """
+    return sum(r.points for r in rules if r.applies)
+
+
+def apply_novel_combinations(
+    rules: list[ACMGRule],
+    total_points: int | None = None,
+) -> ClassificationResult:
+    """Apply all novel ClinGen SVI 2024 combinations and return a ClassificationResult.
+
+    This is the function tests import. It wraps evaluate_all_combinations and
+    classify_by_points to return a ClassificationResult with .classification.
+
+    Args:
+        rules: List of applied ACMG rules.
+        total_points: Pre-computed total points (recomputed if None).
+
+    Returns:
+        ClassificationResult with classification string.
+    """
+    pts = total_points if total_points is not None else compute_total_points(rules)
+    applied = [r for r in rules if r.applies]
+
+    stand_alone = any(
+        r.strength == EvidenceStrength.STAND_ALONE and r.applies for r in rules
+    )
+    combos = evaluate_all_combinations(applied)
+    novel_combo = combos[0].combination_name if combos else None
+
+    classification = classify_by_points(pts, stand_alone_benign=stand_alone)
+
+    from bayesacmg.models import VariantInput  # local import to avoid circularity
+
+    _dummy_variant = VariantInput(chrom="", pos=0, ref="", alt="", variant_type="snv")
+    return ClassificationResult(
+        variant=_dummy_variant,
+        classification=classification,
+        total_points=pts,
+        rules_applied=applied,
+        rules_not_applied=[r for r in rules if not r.applies],
         stand_alone_benign=stand_alone,
         novel_combination=novel_combo,
     )

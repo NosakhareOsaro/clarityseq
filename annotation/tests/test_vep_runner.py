@@ -13,22 +13,18 @@ from __future__ import annotations
 
 import json
 import subprocess
-import tempfile
 from pathlib import Path
-from typing import Generator
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from annotation.vep_runner import (
     VEP_PICK_ORDER,
-    AnnotatedVariant,
     VEPRunner,
     _extract_spliceai_max,
     _safe_float,
     _safe_int,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -97,13 +93,7 @@ MOCK_VEP_RECORD_MANE_SELECT = {
             "SpliceAI_pred_DS_DL": "0.03",
         }
     ],
-    "colocated_variants": [
-        {
-            "var_synonyms": {
-                "ClinVar": ["VCV000012345"]
-            }
-        }
-    ],
+    "colocated_variants": [{"var_synonyms": {"ClinVar": ["VCV000012345"]}}],
     "extras": {},
 }
 
@@ -347,9 +337,7 @@ class TestRunVEP:
         with pytest.raises(FileNotFoundError, match="Input VCF not found"):
             runner.run_vep(tmp_path / "nonexistent.vcf")
 
-    def test_run_vep_calls_subprocess(
-        self, runner: VEPRunner, tmp_path: Path
-    ) -> None:
+    def test_run_vep_calls_subprocess(self, runner: VEPRunner, tmp_path: Path) -> None:
         """run_vep should call subprocess.run with the VEP command."""
         vcf_path = tmp_path / "input.vcf"
         vcf_path.touch()
@@ -363,8 +351,10 @@ class TestRunVEP:
         mock_result.returncode = 0
         mock_result.stderr = ""
 
-        with patch("subprocess.run", return_value=mock_result) as mock_run, \
-             patch.object(runner, "_parse_vep_json", return_value=[]) as mock_parse:
+        with (
+            patch("subprocess.run", return_value=mock_result) as mock_run,
+            patch.object(runner, "_parse_vep_json", return_value=[]),
+        ):
             runner.run_vep(vcf_path, out_path)
 
         mock_run.assert_called_once()
@@ -432,3 +422,97 @@ class TestUtilities:
         """_extract_spliceai_max should return None when no scores present."""
         result = _extract_spliceai_max({}, {})
         assert result is None
+
+    def test_safe_float_uncoercible_type_returns_none(self) -> None:
+        """A TypeError during float() conversion (e.g. a list) is caught."""
+        assert _safe_float([1, 2, 3]) is None
+
+    def test_safe_int_uncoercible_type_returns_none(self) -> None:
+        """A TypeError during int() conversion (e.g. a dict) is caught."""
+        assert _safe_int({"a": 1}) is None
+
+    def test_safe_int_returns_none_for_dot(self) -> None:
+        """_safe_int should return None for VEP's missing value '.'."""
+        assert _safe_int(".") is None
+
+    def test_safe_int_returns_none_for_none(self) -> None:
+        """_safe_int should return None for Python None."""
+        assert _safe_int(None) is None
+
+
+# ---------------------------------------------------------------------------
+# Tests for run_vep with default (temp-file) output_path
+# ---------------------------------------------------------------------------
+
+
+class TestRunVepDefaultOutputPath:
+    """Tests for run_vep() when output_path is not supplied (temp file)."""
+
+    def test_run_vep_uses_temp_file_and_cleans_up(
+        self, runner: VEPRunner, tmp_path: Path
+    ) -> None:
+        """When output_path is None, a NamedTemporaryFile should be created,
+        used for VEP output, and then deleted afterwards."""
+        vcf_path = tmp_path / "input.vcf"
+        vcf_path.touch()
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stderr = ""
+
+        captured_output_path: dict[str, Path] = {}
+
+        def fake_run(cmd, **kwargs):
+            # The output path is the argument immediately following
+            # "--output_file" in the constructed command.
+            idx = cmd.index("--output_file")
+            out_path = Path(cmd[idx + 1])
+            captured_output_path["path"] = out_path
+            # Simulate VEP writing its JSON output file.
+            with open(out_path, "w") as fh:
+                fh.write(json.dumps(MOCK_VEP_RECORD_MANE_SELECT) + "\n")
+            return mock_result
+
+        with patch("subprocess.run", side_effect=fake_run):
+            variants = runner.run_vep(vcf_path)
+
+        assert len(variants) == 1
+        assert variants[0].gene_symbol == "BRCA1"
+        # Temp output file should have been cleaned up after parsing.
+        assert not captured_output_path["path"].exists()
+
+
+# ---------------------------------------------------------------------------
+# Tests for malformed / blank lines in VEP JSON output
+# ---------------------------------------------------------------------------
+
+
+class TestParseVepJsonEdgeCases:
+    """Tests for _parse_vep_json() with blank and malformed lines."""
+
+    def test_blank_lines_are_skipped(self, runner: VEPRunner, tmp_path: Path) -> None:
+        """Blank lines in the JSON output file should be skipped without error."""
+        json_path = tmp_path / "output.json"
+        with open(json_path, "w") as fh:
+            fh.write("\n")
+            fh.write("   \n")
+            fh.write(json.dumps(MOCK_VEP_RECORD_MANE_SELECT) + "\n")
+            fh.write("\n")
+
+        variants = runner._parse_vep_json(json_path)
+        assert len(variants) == 1
+        assert variants[0].gene_symbol == "BRCA1"
+
+    def test_malformed_json_line_is_skipped_with_warning(
+        self, runner: VEPRunner, tmp_path: Path
+    ) -> None:
+        """A line that fails json.loads() should be logged and skipped,
+        without aborting parsing of subsequent valid lines."""
+        json_path = tmp_path / "output.json"
+        with open(json_path, "w") as fh:
+            fh.write("{not valid json,,,\n")
+            fh.write(json.dumps(MOCK_VEP_RECORD_NO_MANE) + "\n")
+
+        variants = runner._parse_vep_json(json_path)
+        assert len(variants) == 1
+        assert variants[0].gene_symbol == "TESTGENE"

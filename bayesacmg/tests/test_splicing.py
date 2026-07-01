@@ -11,12 +11,12 @@ Guidelines:
     Walker et al. 2023 Am J Hum Genet 110:1046 PMID:36898414
     ACGS 2024 v1.2 §5 (splicing evidence)
 """
+
 from __future__ import annotations
 
-import pytest
 
 from bayesacmg.models import EvidenceStrength, VariantInput, VariantType
-from bayesacmg.rules.splicing import rule_splicing_pp3_bp4_bp7
+from bayesacmg.rules.splicing import _resolve_splice_score, rule_splicing_pp3_bp4_bp7
 
 
 class TestSplicingPP3BP4BP7:
@@ -75,7 +75,7 @@ class TestSplicingPP3BP4BP7:
         """
         result = rule_splicing_pp3_bp4_bp7(
             variant=synonymous_no_splice_impact,
-            spliceai_delta=0.03,   # < 0.1
+            spliceai_delta=0.03,  # < 0.1
             pangolin_score=0.02,
         )
         assert result.applies is True
@@ -88,12 +88,12 @@ class TestSplicingPP3BP4BP7:
         """SpliceAI 0.1–0.2 for non-synonymous variant → inconclusive (no evidence)."""
         result = rule_splicing_pp3_bp4_bp7(
             variant=canonical_splice_donor,
-            spliceai_delta=0.15,   # 0.1 ≤ Δ < 0.2 = inconclusive
+            spliceai_delta=0.15,  # 0.1 ≤ Δ < 0.2 = inconclusive
             pangolin_score=0.12,
         )
-        assert result.applies is False, (
-            "SpliceAI in 0.1–0.2 range is inconclusive — no PP3/BP4/BP7 evidence"
-        )
+        assert (
+            result.applies is False
+        ), "SpliceAI in 0.1–0.2 range is inconclusive — no PP3/BP4/BP7 evidence"
 
     def test_pangolin_spliceai_disagreement_uses_conservative(
         self, canonical_splice_donor: VariantInput
@@ -105,8 +105,8 @@ class TestSplicingPP3BP4BP7:
         """
         result = rule_splicing_pp3_bp4_bp7(
             variant=canonical_splice_donor,
-            spliceai_delta=0.6,    # Strong
-            pangolin_score=0.25,   # Moderate — lower
+            spliceai_delta=0.6,  # Strong
+            pangolin_score=0.25,  # Moderate — lower
         )
         # Conservative = lower score = 0.25 = Moderate
         assert result.strength == EvidenceStrength.MODERATE, (
@@ -115,6 +115,79 @@ class TestSplicingPP3BP4BP7:
         )
         # Disagreement should be documented
         evidence_str = " ".join(result.evidence_items)
-        assert "disagree" in evidence_str.lower() or "pangolin" in evidence_str.lower(), (
-            "Disagreement between SpliceAI and Pangolin should be documented in evidence_items"
+        assert (
+            "disagree" in evidence_str.lower() or "pangolin" in evidence_str.lower()
+        ), "Disagreement between SpliceAI and Pangolin should be documented in evidence_items"
+
+    def test_no_scores_available_at_all(self) -> None:
+        """No SpliceAI or Pangolin score anywhere (args or variant) → applies=False."""
+        variant = VariantInput(
+            chrom="17",
+            pos=41_215_918,
+            ref="G",
+            alt="A",
+            variant_type=VariantType.SPLICE_SITE,
+            gene_symbol="BRCA1",
+            transcript_id="NM_007294.4",
+            spliceai_delta=None,
+            spliceai_max_delta=None,
+            pangolin_score=None,
         )
+        result = rule_splicing_pp3_bp4_bp7(variant)
+        assert result.applies is False
+        assert result.rule_id == "PP3"
+        assert "no spliceai or pangolin score" in " ".join(result.evidence_items).lower()
+
+    def test_non_synonymous_no_splice_impact_gives_bp4(
+        self, canonical_splice_donor: VariantInput
+    ) -> None:
+        """Non-synonymous variant + score < 0.1 → BP4 (not BP7, since not synonymous)."""
+        # canonical_splice_donor is variant_type=SPLICE_SITE, not synonymous
+        result = rule_splicing_pp3_bp4_bp7(
+            variant=canonical_splice_donor,
+            spliceai_delta=0.02,
+            pangolin_score=0.01,
+        )
+        assert result.applies is True
+        assert result.rule_id == "BP4"
+        assert result.strength == EvidenceStrength.SUPPORTING_BENIGN
+
+
+class TestResolveSpliceScore:
+    """Direct tests for the internal _resolve_splice_score() helper."""
+
+    def test_both_scores_none(self) -> None:
+        """Both SpliceAI and Pangolin absent → (None, 'none', False)."""
+        score, tool, disagreement = _resolve_splice_score(None, None)
+        assert score is None
+        assert tool == "none"
+        assert disagreement is False
+
+    def test_only_pangolin_available(self) -> None:
+        """SpliceAI absent, Pangolin present → uses Pangolin, no disagreement flag."""
+        score, tool, disagreement = _resolve_splice_score(None, 0.42)
+        assert score == 0.42
+        assert tool == "Pangolin"
+        assert disagreement is False
+
+    def test_only_spliceai_available(self) -> None:
+        """Pangolin absent, SpliceAI present → uses SpliceAI, no disagreement flag."""
+        score, tool, disagreement = _resolve_splice_score(0.6, None)
+        assert score == 0.6
+        assert tool == "SpliceAI"
+        assert disagreement is False
+
+    def test_both_available_spliceai_lower_or_equal_is_conservative(self) -> None:
+        """When SpliceAI <= Pangolin, SpliceAI (the lower score) is chosen as conservative."""
+        score, tool, disagreement = _resolve_splice_score(0.3, 0.3)
+        assert score == 0.3
+        assert tool == "SpliceAI (conservative)"
+        # Same categorical bucket (both moderate_impact) → no disagreement
+        assert disagreement is False
+
+    def test_both_available_pangolin_lower_is_conservative(self) -> None:
+        """When Pangolin < SpliceAI, Pangolin (the lower score) is chosen as conservative."""
+        score, tool, disagreement = _resolve_splice_score(0.6, 0.25)
+        assert score == 0.25
+        assert tool == "Pangolin (conservative)"
+        assert disagreement is True  # strong_impact vs moderate_impact

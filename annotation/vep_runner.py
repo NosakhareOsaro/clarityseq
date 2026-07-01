@@ -31,8 +31,8 @@ VEP Plugins Used
 - dbNSFP_4.7      — Liu et al. 2020 PMID:33261662
 - gnomAD_v4.1     — Karczewski et al. 2020 PMID:32461654 (v4.1 April 2024)
 
-gnomAD v4.1 note: v4.0 contained an allele number (AN) bug for certain
-variants in non-EUR populations; v4.1 (released April 2024) corrects this.
+gnomAD v4.1 (April 2024): use v4.1 or later; prior releases had an allele
+number (AN) bug for certain variants in non-EUR populations.
 Always use v4.1 or later for clinical reporting.
 """
 
@@ -44,7 +44,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -53,31 +53,31 @@ VEP_PICK_ORDER: str = "mane_select,mane_plus_clinical,canonical"
 
 # VEP v111 mandatory flags for clinical-grade annotation
 VEP_CORE_FLAGS: list[str] = [
-    "--everything",           # Enable all consequence types
-    "--pick",                 # One consequence per variant
+    "--everything",  # Enable all consequence types
+    "--pick",  # One consequence per variant
     f"--pick_order {VEP_PICK_ORDER}",
     "--format vcf",
     "--output_file STDOUT",
-    "--json",                 # Machine-readable JSON output
-    "--no_stats",             # Skip HTML statistics (faster)
+    "--json",  # Machine-readable JSON output
+    "--no_stats",  # Skip HTML statistics (faster)
     "--assembly GRCh38",
     "--fasta /data/Homo_sapiens.GRCh38.dna.toplevel.fa.gz",
-    "--offline",              # Use local cache (no API calls)
+    "--offline",  # Use local cache (no API calls)
     "--cache",
-    "--merged",               # Merged Ensembl/RefSeq cache
-    "--hgvs",                 # HGVS nomenclature
-    "--hgvsg",                # Genomic HGVS
-    "--protein",              # Protein consequence
-    "--symbol",               # HGNC gene symbol
-    "--canonical",            # Mark canonical transcript
-    "--mane",                 # Mark MANE Select/Plus Clinical
-    "--af_gnomade",           # gnomAD exome AF (v4.1 via cache)
-    "--af_gnomadg",           # gnomAD genome AF (v4.1 via cache)
-    "--sift b",               # SIFT score + prediction
-    "--polyphen b",           # PolyPhen score + prediction
-    "--domains",              # Protein domain annotation
-    "--regulatory",           # Regulatory feature overlap
-    "--numbers",              # Exon/intron numbering
+    "--merged",  # Merged Ensembl/RefSeq cache
+    "--hgvs",  # HGVS nomenclature
+    "--hgvsg",  # Genomic HGVS
+    "--protein",  # Protein consequence
+    "--symbol",  # HGNC gene symbol
+    "--canonical",  # Mark canonical transcript
+    "--mane",  # Mark MANE Select/Plus Clinical
+    "--af_gnomade",  # gnomAD exome AF (v4.1 via cache)
+    "--af_gnomadg",  # gnomAD genome AF (v4.1 via cache)
+    "--sift b",  # SIFT score + prediction
+    "--polyphen b",  # PolyPhen score + prediction
+    "--domains",  # Protein domain annotation
+    "--regulatory",  # Regulatory feature overlap
+    "--numbers",  # Exon/intron numbering
 ]
 
 # SpliceAI score threshold for reporting (≥0.2 flag; ≥0.5 clinical significance)
@@ -117,22 +117,22 @@ class AnnotatedVariant:
     pos: int
     ref: str
     alt: str
-    gene_symbol: Optional[str] = None
-    transcript_id: Optional[str] = None
+    gene_symbol: str | None = None
+    transcript_id: str | None = None
     is_mane_select: bool = False
     is_mane_plus_clinical: bool = False
-    hgvsc: Optional[str] = None
-    hgvsp: Optional[str] = None
+    hgvsc: str | None = None
+    hgvsp: str | None = None
     consequence_terms: list[str] = field(default_factory=list)
-    impact: Optional[str] = None
-    revel_score: Optional[float] = None
-    alphamissense_score: Optional[float] = None
-    spliceai_ds_max: Optional[float] = None
-    cadd_phred: Optional[float] = None
-    gnomad_af: Optional[float] = None
-    gnomad_ac: Optional[int] = None
-    gnomad_an: Optional[int] = None
-    clinvar_id: Optional[str] = None
+    impact: str | None = None
+    revel_score: float | None = None
+    alphamissense_score: float | None = None
+    spliceai_ds_max: float | None = None
+    cadd_phred: float | None = None
+    gnomad_af: float | None = None
+    gnomad_ac: int | None = None
+    gnomad_an: int | None = None
+    clinvar_id: str | None = None
     raw: dict[str, Any] = field(default_factory=dict)
 
 
@@ -167,13 +167,13 @@ class VEPRunner:
     def __init__(
         self,
         vep_binary: str = "vep",
-        cache_dir: Optional[str | Path] = None,
-        plugin_dir: Optional[str | Path] = None,
-        alphamissense_tsv: Optional[str | Path] = None,
-        dbnsfp_db: Optional[str | Path] = None,
-        spliceai_snv: Optional[str | Path] = None,
-        spliceai_indel: Optional[str | Path] = None,
-        extra_flags: Optional[list[str]] = None,
+        cache_dir: str | Path | None = None,
+        plugin_dir: str | Path | None = None,
+        alphamissense_tsv: str | Path | None = None,
+        dbnsfp_db: str | Path | None = None,
+        spliceai_snv: str | Path | None = None,
+        spliceai_indel: str | Path | None = None,
+        extra_flags: list[str] | None = None,
     ) -> None:
         self._vep = vep_binary
         self._cache_dir = Path(cache_dir) if cache_dir else None
@@ -191,7 +191,7 @@ class VEPRunner:
     def run_vep(
         self,
         vcf_path: Path,
-        output_path: Optional[Path] = None,
+        output_path: Path | None = None,
     ) -> list[AnnotatedVariant]:
         """Run VEP v111 on a VCF file and return parsed annotations.
 
@@ -213,7 +213,7 @@ class VEPRunner:
             raise FileNotFoundError(f"Input VCF not found: {vcf_path}")
 
         # Use a temp file for output if none specified
-        tmp: Optional[tempfile.NamedTemporaryFile] = None
+        tmp: tempfile.NamedTemporaryFile | None = None
         if output_path is None:
             tmp = tempfile.NamedTemporaryFile(suffix=".vep.json", delete=False)
             output_path = Path(tmp.name)
@@ -262,15 +262,20 @@ class VEPRunner:
 
         # Core flags
         cmd += [
-            "--input_file", str(vcf_path),
-            "--output_file", str(output_path),
-            "--format", "vcf",
+            "--input_file",
+            str(vcf_path),
+            "--output_file",
+            str(output_path),
+            "--format",
+            "vcf",
             "--json",
             "--no_stats",
-            "--assembly", "GRCh38",
+            "--assembly",
+            "GRCh38",
             "--everything",
             "--pick",
-            "--pick_order", VEP_PICK_ORDER,
+            "--pick_order",
+            VEP_PICK_ORDER,
             "--hgvs",
             "--hgvsg",
             "--protein",
@@ -280,8 +285,10 @@ class VEPRunner:
             "--numbers",
             "--domains",
             "--regulatory",
-            "--sift", "b",
-            "--polyphen", "b",
+            "--sift",
+            "b",
+            "--polyphen",
+            "b",
             "--af_gnomade",
             "--af_gnomadg",
             "--offline",
@@ -362,7 +369,7 @@ class VEPRunner:
         logger.info("Parsed %d annotated variants from VEP output", len(variants))
         return variants
 
-    def _parse_record(self, record: dict[str, Any]) -> Optional[AnnotatedVariant]:
+    def _parse_record(self, record: dict[str, Any]) -> AnnotatedVariant | None:
         """Extract one AnnotatedVariant from a VEP JSON record.
 
         The VEP --pick flag selects one consequence; we look for the
@@ -397,7 +404,9 @@ class VEPRunner:
         extras: dict[str, Any] = record.get("extras", {})
 
         # AlphaMissense score from plugin
-        am_score = _safe_float(tc.get("alphamissense_score") or extras.get("AlphaMissense"))
+        am_score = _safe_float(
+            tc.get("alphamissense_score") or extras.get("AlphaMissense")
+        )
 
         # SpliceAI maximum delta score
         spliceai_max = _extract_spliceai_max(tc, extras)
@@ -412,9 +421,9 @@ class VEPRunner:
         gnomad_an = _safe_int(tc.get("gnomADg_AN") or record.get("gnomADg_AN"))
 
         # ClinVar variation ID
-        clinvar_id = record.get("colocated_variants", [{}])[0].get("var_synonyms", {}).get(
-            "ClinVar", [None]
-        )
+        colocated = record.get("colocated_variants") or []
+        _first_coloc = colocated[0] if colocated else {}
+        clinvar_id = _first_coloc.get("var_synonyms", {}).get("ClinVar", [None])
         if isinstance(clinvar_id, list):
             clinvar_id = clinvar_id[0] if clinvar_id else None
 
@@ -448,7 +457,7 @@ class VEPRunner:
 # ---------------------------------------------------------------------------
 
 
-def _safe_float(value: Any) -> Optional[float]:
+def _safe_float(value: Any) -> float | None:
     """Convert value to float, returning None on failure.
 
     Args:
@@ -465,7 +474,7 @@ def _safe_float(value: Any) -> Optional[float]:
         return None
 
 
-def _safe_int(value: Any) -> Optional[int]:
+def _safe_int(value: Any) -> int | None:
     """Convert value to int, returning None on failure.
 
     Args:
@@ -485,7 +494,7 @@ def _safe_int(value: Any) -> Optional[int]:
 def _extract_spliceai_max(
     tc: dict[str, Any],
     extras: dict[str, Any],
-) -> Optional[float]:
+) -> float | None:
     """Extract the maximum SpliceAI delta score from VEP annotation.
 
     SpliceAI reports four delta scores (DS_AG, DS_AL, DS_DG, DS_DL).
@@ -498,8 +507,12 @@ def _extract_spliceai_max(
     Returns:
         Maximum delta score or None.
     """
-    ds_keys = ["SpliceAI_pred_DS_AG", "SpliceAI_pred_DS_AL",
-               "SpliceAI_pred_DS_DG", "SpliceAI_pred_DS_DL"]
+    ds_keys = [
+        "SpliceAI_pred_DS_AG",
+        "SpliceAI_pred_DS_AL",
+        "SpliceAI_pred_DS_DG",
+        "SpliceAI_pred_DS_DL",
+    ]
     scores: list[float] = []
 
     for key in ds_keys:

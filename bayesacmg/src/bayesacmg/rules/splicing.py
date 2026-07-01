@@ -37,12 +37,12 @@ from bayesacmg.models import ACMGRule, EvidenceStrength, VariantInput
 # SpliceAI Δ score thresholds — Walker et al. 2023 PMID:36898414
 # ---------------------------------------------------------------------------
 
-_SPLICEAI_STRONG_THRESHOLD = 0.5     # ≥0.5 → strong splice impact → PP3 Strong
-_SPLICEAI_MODERATE_THRESHOLD = 0.2   # ≥0.2 → moderate splice impact → PP3
+_SPLICEAI_STRONG_THRESHOLD = 0.5  # ≥0.5 → strong splice impact → PP3 Strong
+_SPLICEAI_MODERATE_THRESHOLD = 0.2  # ≥0.2 → moderate splice impact → PP3
 _SPLICEAI_NO_IMPACT_THRESHOLD = 0.1  # <0.1 → no splice impact → BP7 (if synonymous)
 
 # Pangolin high-confidence threshold (conservative when disagreement)
-_PANGOLIN_HIGH_THRESHOLD = 0.5       # used when Pangolin is primary
+_PANGOLIN_HIGH_THRESHOLD = 0.5  # used when Pangolin is primary
 
 
 def _resolve_splice_score(
@@ -95,11 +95,11 @@ def _score_category(score: float) -> str:
         One of ``"strong_impact"``, ``"moderate_impact"``, ``"low_impact"``,
         or ``"no_impact"``.
     """
-    if score >= _SPLICEAI_STRONG_THRESHOLD:        # ≥0.5; Walker 2023 PMID:36898414
+    if score >= _SPLICEAI_STRONG_THRESHOLD:  # ≥0.5; Walker 2023 PMID:36898414
         return "strong_impact"
-    if score >= _SPLICEAI_MODERATE_THRESHOLD:      # ≥0.2; Walker 2023 PMID:36898414
+    if score >= _SPLICEAI_MODERATE_THRESHOLD:  # ≥0.2; Walker 2023 PMID:36898414
         return "moderate_impact"
-    if score < _SPLICEAI_NO_IMPACT_THRESHOLD:      # <0.1; Walker 2023 PMID:36898414
+    if score < _SPLICEAI_NO_IMPACT_THRESHOLD:  # <0.1; Walker 2023 PMID:36898414
         return "no_impact"
     return "low_impact"
 
@@ -107,8 +107,11 @@ def _score_category(score: float) -> str:
 def rule_splicing_pp3_bp4_bp7(
     variant: VariantInput,
     spliceai_score: float | None = None,
+    spliceai_delta: (
+        float | None
+    ) = None,  # alias for spliceai_score (test/VEP convention)
     pangolin_score: float | None = None,
-) -> list[ACMGRule]:
+) -> ACMGRule:
     """Evaluate PP3, BP4, and BP7 for splice-impacting variants.
 
     Implements the ClinGen SVI Splicing Subgroup framework from Walker et al.
@@ -151,11 +154,23 @@ def rule_splicing_pp3_bp4_bp7(
         "ACGS 2024 v1.2 §5 Table 2",
     ]
 
-    # Allow explicit arguments to override VariantInput fields
-    effective_spliceai = spliceai_score if spliceai_score is not None else variant.spliceai_max_delta
-    effective_pangolin = pangolin_score if pangolin_score is not None else variant.pangolin_score
+    # Resolve spliceai_delta alias → spliceai_score
+    if spliceai_score is None and spliceai_delta is not None:
+        spliceai_score = spliceai_delta
 
-    score, tool_used, disagreement = _resolve_splice_score(effective_spliceai, effective_pangolin)
+    # Allow explicit arguments to override VariantInput fields
+    effective_spliceai = (
+        spliceai_score
+        if spliceai_score is not None
+        else (variant.spliceai_delta or variant.spliceai_max_delta)
+    )
+    effective_pangolin = (
+        pangolin_score if pangolin_score is not None else variant.pangolin_score
+    )
+
+    score, tool_used, disagreement = _resolve_splice_score(
+        effective_spliceai, effective_pangolin
+    )
 
     disagreement_note = ""
     if disagreement:
@@ -166,18 +181,20 @@ def rule_splicing_pp3_bp4_bp7(
 
     # No scores available
     if score is None:
-        return [ACMGRule(
+        return ACMGRule(
             rule_id="PP3",
             strength=EvidenceStrength.SUPPORTING,
-            evidence_items=["No SpliceAI or Pangolin score available for splice assessment"],
+            evidence_items=[
+                "No SpliceAI or Pangolin score available for splice assessment"
+            ],
             citations=citations,
             applies=False,
             notes="Cannot evaluate splicing PP3/BP4/BP7 without in silico scores",
-        )]
+        )
 
     # ≥ 0.5 → Strong splice impact → PP3 Strong (Walker 2023 PMID:36898414)
     if score >= _SPLICEAI_STRONG_THRESHOLD:
-        return [ACMGRule(
+        return ACMGRule(
             rule_id="PP3",
             strength=EvidenceStrength.STRONG,
             evidence_items=[
@@ -187,11 +204,11 @@ def rule_splicing_pp3_bp4_bp7(
             ],
             citations=citations,
             applies=True,
-        )]
+        )
 
     # ≥ 0.2 → Moderate splice impact → PP3 Moderate (Walker 2023 PMID:36898414)
     if score >= _SPLICEAI_MODERATE_THRESHOLD:
-        return [ACMGRule(
+        return ACMGRule(
             rule_id="PP3",
             strength=EvidenceStrength.MODERATE,
             evidence_items=[
@@ -201,13 +218,13 @@ def rule_splicing_pp3_bp4_bp7(
             ],
             citations=citations,
             applies=True,
-        )]
+        )
 
     # < 0.1 → No splice impact
     if score < _SPLICEAI_NO_IMPACT_THRESHOLD:
         # Synonymous + no splice impact → BP7 (Walker 2023 PMID:36898414)
         if variant.variant_type == "synonymous":
-            return [ACMGRule(
+            return ACMGRule(
                 rule_id="BP7",
                 strength=EvidenceStrength.SUPPORTING_BENIGN,
                 evidence_items=[
@@ -217,9 +234,9 @@ def rule_splicing_pp3_bp4_bp7(
                 ],
                 citations=citations,
                 applies=True,
-            )]
+            )
         # Non-synonymous but no splice impact → BP4
-        return [ACMGRule(
+        return ACMGRule(
             rule_id="BP4",
             strength=EvidenceStrength.SUPPORTING_BENIGN,
             evidence_items=[
@@ -229,10 +246,10 @@ def rule_splicing_pp3_bp4_bp7(
             ],
             citations=citations,
             applies=True,
-        )]
+        )
 
     # Score in 0.1–0.2 range: uncertain, neither criterion fires
-    return [ACMGRule(
+    return ACMGRule(
         rule_id="PP3",
         strength=EvidenceStrength.SUPPORTING,
         evidence_items=[
@@ -244,4 +261,4 @@ def rule_splicing_pp3_bp4_bp7(
         citations=citations,
         applies=False,
         notes="SpliceAI in uncertain zone; additional evidence required",
-    )]
+    )

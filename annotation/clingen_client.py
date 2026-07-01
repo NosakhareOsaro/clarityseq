@@ -46,7 +46,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
 
 import httpx
 
@@ -90,14 +89,14 @@ class GeneValidityClassification:
     """
 
     disease_label: str
-    disease_id: Optional[str] = None
-    moi: Optional[str] = None
+    disease_id: str | None = None
+    moi: str | None = None
     classification: str = "Limited"
-    classification_date: Optional[str] = None
-    sop_version: Optional[str] = None
-    gcep_id: Optional[str] = None
-    gcep_name: Optional[str] = None
-    report_url: Optional[str] = None
+    classification_date: str | None = None
+    sop_version: str | None = None
+    gcep_id: str | None = None
+    gcep_name: str | None = None
+    report_url: str | None = None
     is_diagnostic: bool = False
 
 
@@ -118,10 +117,10 @@ class GeneValidity:
             gain-of-function or missense-specific mechanism.
     """
 
-    hgnc_id: Optional[str]
+    hgnc_id: str | None
     gene_symbol: str
     classifications: list[GeneValidityClassification] = field(default_factory=list)
-    highest_classification: Optional[str] = None
+    highest_classification: str | None = None
     definitive_diseases: list[str] = field(default_factory=list)
     strong_diseases: list[str] = field(default_factory=list)
     has_lof_disease_mechanism: bool = False
@@ -151,7 +150,7 @@ class ClinGenClient:
         self._api_base = api_base
         self._http_timeout = http_timeout
 
-    async def get_gene_validity(self, gene_symbol: str) -> Optional[GeneValidity]:
+    async def get_gene_validity(self, gene_symbol: str) -> GeneValidity | None:
         """Retrieve ClinGen gene-disease validity curations for a gene.
 
         Args:
@@ -170,12 +169,14 @@ class ClinGenClient:
                 resp.raise_for_status()
                 data = resp.json()
         except httpx.HTTPError as exc:
-            logger.warning("ClinGen validity lookup failed for %s: %s", gene_symbol, exc)
+            logger.warning(
+                "ClinGen validity lookup failed for %s: %s", gene_symbol, exc
+            )
             return None
 
         return self._parse_response(gene_symbol, data)
 
-    async def get_gene_validity_by_hgnc(self, hgnc_id: str) -> Optional[GeneValidity]:
+    async def get_gene_validity_by_hgnc(self, hgnc_id: str) -> GeneValidity | None:
         """Retrieve gene-disease validity by HGNC ID.
 
         Args:
@@ -201,7 +202,7 @@ class ClinGenClient:
 
     def is_valid_disease_gene(
         self,
-        validity: Optional[GeneValidity],
+        validity: GeneValidity | None,
         min_level: str = "Strong",
     ) -> bool:
         """Check if a gene meets a minimum ClinGen validity threshold.
@@ -228,7 +229,7 @@ class ClinGenClient:
     # Internal parsing
     # ------------------------------------------------------------------
 
-    def _parse_response(self, gene_symbol: str, data: dict) -> Optional[GeneValidity]:
+    def _parse_response(self, gene_symbol: str, data: dict) -> GeneValidity | None:
         """Parse ClinGen API response into a GeneValidity object.
 
         Args:
@@ -243,7 +244,7 @@ class ClinGenClient:
             return None
 
         classifications: list[GeneValidityClassification] = []
-        hgnc_id: Optional[str] = None
+        hgnc_id: str | None = None
 
         for item in raw_results:
             gene_info = item.get("gene", {})
@@ -276,12 +277,10 @@ class ClinGenClient:
         highest = _highest_classification(valid_labels)
 
         definitive = [
-            c.disease_label for c in classifications
-            if c.classification == "Definitive"
+            c.disease_label for c in classifications if c.classification == "Definitive"
         ]
         strong = [
-            c.disease_label for c in classifications
-            if c.classification == "Strong"
+            c.disease_label for c in classifications if c.classification == "Strong"
         ]
 
         # Infer disease mechanism from MOI and disease names (heuristic)
@@ -326,7 +325,7 @@ def _validity_index(level: str) -> int:
         return len(_VALIDITY_ORDER)
 
 
-def _highest_classification(levels: list[str]) -> Optional[str]:
+def _highest_classification(levels: list[str]) -> str | None:
     """Return the highest-evidence ClinGen classification from a list.
 
     Args:

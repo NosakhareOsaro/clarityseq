@@ -100,7 +100,7 @@
 //     IMPORTANT: Use ancestry-matched population AF where possible:
 //       (gnomAD AFR/AMR/EAS/EUR/SAS subset from SOMALIER_ANCESTRY output)
 //     Reference: gnomAD v4.1 released April 2024; 807,162 individuals.
-//     v4.0 had AN bug — do NOT use v4.0 annotations.
+//     Use v4.1 only — prior releases had an AN calculation bug.
 //
 //   ClinVar (PP5/BP6 — use with caution):
 //     PP5 (supporting pathogenic): ClinVar P/LP with ≥2-star review status
@@ -279,7 +279,7 @@ process VEP_ANNOTATE {
         #   BA1 (stand-alone benign): AF >0.05 in any population
         #   BS1 (strong benign): 0.005 < AF ≤ 0.05 in matched population
         #   PM2 (moderate pathogenic): absent or extremely rare in gnomAD
-        # IMPORTANT: Use gnomAD v4.1 (April 2024). v4.0 had AN bug.
+        # IMPORTANT: Use gnomAD v4.1 (April 2024); prior releases had AN bug.
         \\
         --custom ${clinvar_vcf},ClinVar,vcf,exact,0,CLNSIG,CLNREVSTAT,CLNDN \\
         # ClinVar: PP5/BP6 supporting evidence — USE WITH CAUTION.

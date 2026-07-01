@@ -201,7 +201,7 @@ def _get_builtin_cyp2d6_recommendations(diplotype: str) -> list[DrugRecommendati
         List of DrugRecommendation objects for common CYP2D6 drugs.
     """
     # Map diplotype to phenotype for built-in recommendations
-    from pgx.cyrius_runner import classify_phenotype
+    from pgx.cyrius_runner import phenotype_from_activity
 
     # Compute rough activity score from diplotype for phenotype classification
     _NO_FUNCTION = {"*3", "*4", "*5", "*6"}
@@ -218,7 +218,7 @@ def _get_builtin_cyp2d6_recommendations(diplotype: str) -> list[DrugRecommendati
         else:
             score += 1.0
 
-    phenotype = classify_phenotype(score)
+    phenotype = phenotype_from_activity(score).value
 
     _CODEINE_RECS: dict[str, str] = {
         "NM": "Use label recommended codeine dosage.",

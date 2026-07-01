@@ -24,7 +24,7 @@
 // Docs: https://gatk.broadinstitute.org/hc/en-us/articles/360036510892
 //       https://gnomad.broadinstitute.org/news/2024-05-gnomad-v4-1-updates/
 // Parameter rationale: see inline comments on each --resource flag
-// Version note: GATK 4.6.0.0; gnomAD v4.1 (NOT v4.0 — see notes below).
+// Version note: GATK 4.6.0.0; gnomAD v4.1 (April 2024; use v4.1 only).
 // ============================================================================
 //
 // TRAINING RESOURCES AND PRIOR VALUES:
@@ -47,10 +47,9 @@
 //   gnomAD v4.1 indels (non-neuro)   prior=6.0
 //
 // GNOMAD v4.1 NOTE:
-//   IMPORTANT: Use gnomAD v4.1 (released April 2024), NOT v4.0.
-//   v4.0 contained a bug in allele number (AN) calculation that caused
-//   underestimated allele frequencies in certain callsets, leading to
-//   incorrect variant filtration. v4.1 fixes this with corrected AN values.
+//   IMPORTANT: Use gnomAD v4.1 (released April 2024); prior releases had an
+//   allele number (AN) bug causing underestimated frequencies in certain
+//   callsets. gnomAD v4.1 corrects AN values for all variants.
 //   v4.1 contains 807,162 individuals (730,947 exomes + 76,215 genomes
 //   including 416,555 UK Biobank samples).
 //   Reference: https://gnomad.broadinstitute.org/news/2024-05-gnomad-v4-1-updates/
@@ -170,7 +169,7 @@ process VQSR_SNP {
         --resource:gnomad,known=false,training=true,truth=false,prior=6.0 ${gnomad} \\
         # gnomAD v4.1 non-neuro sites (807,162 individuals).
         # Ancestry-stratified subset selected by SOMALIER_ANCESTRY if ancestry_vqsr=true.
-        # IMPORTANT: v4.1 ONLY — v4.0 had AN calculation bug (see module header).
+        # IMPORTANT: v4.1 ONLY — prior releases had AN calculation bug (see header).
         # prior=6.0: moderate confidence — large but not perfectly curated
         \\
         --use-allele-specific-annotations \\

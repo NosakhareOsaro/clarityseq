@@ -31,11 +31,21 @@ from fastapi.testclient import TestClient
 def client() -> TestClient:
     """Create a TestClient for the Beacon FastAPI application.
 
+    Overrides the DB session dependency so tests run without PostgreSQL.
+
     Returns:
         FastAPI TestClient for synchronous test access.
     """
     from beacon_api.main import app
-    return TestClient(app, raise_server_exceptions=False)
+    from beacon_api.db.session import get_session
+
+    async def _mock_get_session():  # type: ignore[return]
+        yield AsyncMock()
+
+    app.dependency_overrides[get_session] = _mock_get_session
+    with TestClient(app, raise_server_exceptions=False) as c:
+        yield c
+    app.dependency_overrides.clear()
 
 
 # ---------------------------------------------------------------------------
@@ -43,12 +53,25 @@ def client() -> TestClient:
 # ---------------------------------------------------------------------------
 
 def _mock_session() -> AsyncMock:
-    """Return a mock async SQLAlchemy session.
-
-    Returns:
-        AsyncMock simulating an AsyncSession.
-    """
+    """Return a mock async SQLAlchemy session."""
     return AsyncMock()
+
+
+# ---------------------------------------------------------------------------
+# / (root) tests
+# ---------------------------------------------------------------------------
+
+
+class TestRoot:
+    """Tests for GET / root redirect hint."""
+
+    def test_root_returns_200_with_message(self, client: TestClient) -> None:
+        """GET / returns HTTP 200 with a hint message pointing to /info."""
+        response = client.get("/")
+        assert response.status_code == 200
+        data = response.json()
+        assert "message" in data
+        assert "/info" in data["message"]
 
 
 # ---------------------------------------------------------------------------
@@ -196,15 +219,14 @@ class TestGVariants:
 
     def test_g_variants_invalid_granularity_returns_422(self, client: TestClient) -> None:
         """GET /g_variants with invalid granularity returns HTTP 422."""
-        with patch("beacon_api.db.session.get_session"):
-            response = client.get(
-                "/g_variants",
-                params={
-                    "chrom": "chr17",
-                    "start": "43044295",
-                    "granularity": "invalid_value",
-                },
-            )
+        response = client.get(
+            "/g_variants",
+            params={
+                "chrom": "chr17",
+                "start": "43044295",
+                "granularity": "invalid_value",
+            },
+        )
         assert response.status_code == 422
 
     def test_g_variants_record_contains_vrs_id(self, client: TestClient) -> None:

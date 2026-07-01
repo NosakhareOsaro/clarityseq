@@ -9,8 +9,11 @@ ClinGen SVI 2024 thresholds under test:
 
 from __future__ import annotations
 
-import pytest
+import sys
 from unittest.mock import AsyncMock, MagicMock, patch
+
+import httpx
+import pytest
 
 from annotation.alphamissense_client import (
     AM_BP4_THRESHOLD,
@@ -19,7 +22,6 @@ from annotation.alphamissense_client import (
     AlphaMissenseResult,
     classify_am_score,
 )
-
 
 # ---------------------------------------------------------------------------
 # classify_am_score — unit tests (no IO)
@@ -97,12 +99,9 @@ class TestAlphaMissenseClientHTTPFallback:
         """HTTP fallback should return a valid AlphaMissenseResult."""
         client = AlphaMissenseClient(tsv_path=None)
 
-        mock_response_data = {
-            "am_pathogenicity": 0.82,
-            "am_class": "likely_pathogenic",
-        }
-
-        with patch.object(client, "_http_lookup", new_callable=AsyncMock) as mock_lookup:
+        with patch.object(
+            client, "_http_lookup", new_callable=AsyncMock
+        ) as mock_lookup:
             mock_lookup.return_value = (0.82, "likely_pathogenic")
             result = await client.get_am_score("chr17", 43094692, "G", "A")
 
@@ -117,7 +116,9 @@ class TestAlphaMissenseClientHTTPFallback:
         """Missing variant should yield ambiguous evidence code."""
         client = AlphaMissenseClient(tsv_path=None)
 
-        with patch.object(client, "_http_lookup", new_callable=AsyncMock) as mock_lookup:
+        with patch.object(
+            client, "_http_lookup", new_callable=AsyncMock
+        ) as mock_lookup:
             mock_lookup.return_value = (None, None)
             result = await client.get_am_score("chr1", 12345, "A", "C")
 
@@ -129,7 +130,9 @@ class TestAlphaMissenseClientHTTPFallback:
         """Score below BP4 threshold should yield BP4 evidence code."""
         client = AlphaMissenseClient(tsv_path=None)
 
-        with patch.object(client, "_http_lookup", new_callable=AsyncMock) as mock_lookup:
+        with patch.object(
+            client, "_http_lookup", new_callable=AsyncMock
+        ) as mock_lookup:
             mock_lookup.return_value = (0.15, "likely_benign")
             result = await client.get_am_score("chr1", 99999, "T", "C")
 
@@ -141,7 +144,9 @@ class TestAlphaMissenseClientHTTPFallback:
         """Client should normalise both '1' and 'chr1' to 'chr1'."""
         client = AlphaMissenseClient(tsv_path=None)
 
-        with patch.object(client, "_http_lookup", new_callable=AsyncMock) as mock_lookup:
+        with patch.object(
+            client, "_http_lookup", new_callable=AsyncMock
+        ) as mock_lookup:
             mock_lookup.return_value = (0.70, "likely_pathogenic")
             result = await client.get_am_score("1", 12345, "A", "G")
 
@@ -159,7 +164,7 @@ class TestAlphaMissenseClientTabix:
 
     @pytest.mark.asyncio
     async def test_tabix_lookup_called_when_file_exists(
-        self, tmp_path: "pytest.TempPathFactory"
+        self, tmp_path: pytest.TempPathFactory
     ) -> None:
         """Tabix lookup should be attempted when TSV file exists."""
         # Create a dummy file so Path.exists() returns True
@@ -178,7 +183,7 @@ class TestAlphaMissenseClientTabix:
 
     @pytest.mark.asyncio
     async def test_http_fallback_used_when_tabix_unavailable(
-        self, tmp_path: "pytest.TempPathFactory"
+        self, tmp_path: pytest.TempPathFactory
     ) -> None:
         """HTTP fallback should be used when pysam is not available."""
         tsv_file = tmp_path / "AlphaMissense_hg38.tsv.gz"
@@ -219,3 +224,179 @@ class TestThresholdConstants:
         """There must be a positive-width ambiguous range between thresholds."""
         ambiguous_width = AM_PP3_THRESHOLD - AM_BP4_THRESHOLD
         assert ambiguous_width > 0, "Ambiguous range must have positive width"
+
+
+# ---------------------------------------------------------------------------
+# AlphaMissenseClient._tabix_lookup — real body (pysam mocked via sys.modules)
+# ---------------------------------------------------------------------------
+
+
+def _make_fake_pysam(fetch_rows):
+    """Build a fake pysam module with a TabixFile that yields fetch_rows."""
+    fake_pysam = MagicMock()
+    fake_tbx = MagicMock()
+    fake_tbx.fetch.return_value = fetch_rows
+    fake_pysam.TabixFile.return_value = fake_tbx
+    return fake_pysam
+
+
+class TestTabixLookupRealBody:
+    """Tests for the actual (unmocked) _tabix_lookup implementation."""
+
+    def test_matching_row_returns_score_and_class(self, tmp_path) -> None:
+        tsv_file = tmp_path / "AlphaMissense_hg38.tsv.gz"
+        tsv_file.touch()
+        client = AlphaMissenseClient(tsv_path=str(tsv_file))
+
+        # Columns: chrom pos ref alt genome uniprot_id transcript_id
+        #          protein_variant am_pathogenicity am_class
+        row = "chr17\t43094692\tG\tA\tgenome\tP38398\tENST00000357654\tp.Glu\t0.82\tlikely_pathogenic"
+        fake_pysam = _make_fake_pysam([row])
+
+        with patch.dict(sys.modules, {"pysam": fake_pysam}):
+            score, am_class = client._tabix_lookup("chr17", 43094692, "G", "A")
+
+        assert score == pytest.approx(0.82)
+        assert am_class == "likely_pathogenic"
+
+    def test_mismatched_alleles_return_none(self, tmp_path) -> None:
+        tsv_file = tmp_path / "AlphaMissense_hg38.tsv.gz"
+        tsv_file.touch()
+        client = AlphaMissenseClient(tsv_path=str(tsv_file))
+
+        row = "chr17\t43094692\tC\tT\tgenome\tP38398\tENST00000357654\tp.Glu\t0.10\tlikely_benign"
+        fake_pysam = _make_fake_pysam([row])
+
+        with patch.dict(sys.modules, {"pysam": fake_pysam}):
+            score, am_class = client._tabix_lookup("chr17", 43094692, "G", "A")
+
+        assert score is None
+        assert am_class is None
+
+    def test_no_fetch_results_returns_none(self, tmp_path) -> None:
+        tsv_file = tmp_path / "AlphaMissense_hg38.tsv.gz"
+        tsv_file.touch()
+        client = AlphaMissenseClient(tsv_path=str(tsv_file))
+
+        fake_pysam = _make_fake_pysam([])
+
+        with patch.dict(sys.modules, {"pysam": fake_pysam}):
+            score, am_class = client._tabix_lookup("chr17", 43094692, "G", "A")
+
+        assert score is None
+        assert am_class is None
+
+    def test_exception_during_lookup_returns_none(self, tmp_path) -> None:
+        """Any exception (e.g. TabixFile init failure) is swallowed and
+        results in (None, None) rather than propagating."""
+        tsv_file = tmp_path / "AlphaMissense_hg38.tsv.gz"
+        tsv_file.touch()
+        client = AlphaMissenseClient(tsv_path=str(tsv_file))
+
+        fake_pysam = MagicMock()
+        fake_pysam.TabixFile.side_effect = OSError("could not open tabix index")
+
+        with patch.dict(sys.modules, {"pysam": fake_pysam}):
+            score, am_class = client._tabix_lookup("chr17", 43094692, "G", "A")
+
+        assert score is None
+        assert am_class is None
+
+
+# ---------------------------------------------------------------------------
+# AlphaMissenseClient._http_lookup — real body
+# ---------------------------------------------------------------------------
+
+
+class TestHttpLookupRealBody:
+    """Tests for the actual (unmocked) _http_lookup implementation."""
+
+    @pytest.mark.asyncio
+    async def test_success_returns_score_and_class(self) -> None:
+        client = AlphaMissenseClient(tsv_path=None)
+
+        with patch("httpx.AsyncClient.get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_response.json.return_value = {
+                "am_pathogenicity": 0.91,
+                "am_class": "likely_pathogenic",
+            }
+            mock_get.return_value = mock_response
+
+            score, am_class = await client._http_lookup(
+                "chr17", 43094692, "G", "A"
+            )
+
+        assert score == pytest.approx(0.91)
+        assert am_class == "likely_pathogenic"
+
+    @pytest.mark.asyncio
+    async def test_missing_score_returns_none_score(self) -> None:
+        """When the API response has no am_pathogenicity, score should be None."""
+        client = AlphaMissenseClient(tsv_path=None)
+
+        with patch("httpx.AsyncClient.get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_response.json.return_value = {"am_pathogenicity": None, "am_class": None}
+            mock_get.return_value = mock_response
+
+            score, am_class = await client._http_lookup(
+                "chr17", 43094692, "G", "A"
+            )
+
+        assert score is None
+        assert am_class is None
+
+    @pytest.mark.asyncio
+    async def test_http_error_returns_none_tuple(self) -> None:
+        client = AlphaMissenseClient(tsv_path=None)
+
+        with patch(
+            "httpx.AsyncClient.get", side_effect=httpx.HTTPError("timeout")
+        ):
+            score, am_class = await client._http_lookup(
+                "chr17", 43094692, "G", "A"
+            )
+
+        assert score is None
+        assert am_class is None
+
+    @pytest.mark.asyncio
+    async def test_bare_chrom_used_in_url(self) -> None:
+        """The 'chr' prefix should be stripped from the URL path."""
+        client = AlphaMissenseClient(tsv_path=None)
+
+        with patch("httpx.AsyncClient.get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.raise_for_status = MagicMock()
+            mock_response.json.return_value = {
+                "am_pathogenicity": 0.5,
+                "am_class": "ambiguous",
+            }
+            mock_get.return_value = mock_response
+
+            await client._http_lookup("chr17", 43094692, "G", "A")
+
+        call_url = mock_get.call_args[0][0]
+        assert "/variant/17/43094692/G/A" in call_url
+
+
+# ---------------------------------------------------------------------------
+# AlphaMissenseClient._check_pysam
+# ---------------------------------------------------------------------------
+
+
+class TestCheckPysam:
+    """Tests for the static _check_pysam() helper."""
+
+    def test_returns_true_when_pysam_importable(self) -> None:
+        fake_pysam = MagicMock()
+        with patch.dict(sys.modules, {"pysam": fake_pysam}):
+            assert AlphaMissenseClient._check_pysam() is True
+
+    def test_returns_false_when_pysam_not_installed(self) -> None:
+        """pysam genuinely isn't installed in this test environment, so the
+        real ImportError path is exercised without any mocking."""
+        assert AlphaMissenseClient._check_pysam() is False

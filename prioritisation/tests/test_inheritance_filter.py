@@ -401,3 +401,70 @@ class TestApplyInheritanceFilter:
         results = apply_inheritance_filter(variants, mode="de_novo")
         assert results[0].passes is True   # absent in parents → de novo
         assert results[1].passes is False  # present in mother → not de novo
+
+    def test_apply_ar_filter_batch_hom_alt_no_compound_het_map(self) -> None:
+        """Batch AR filter (no compound_het_gene_map) evaluates hom-alt only."""
+        variants = [
+            make_variant(proband_gt="1/1", gene="GENE_A"),  # hom-alt → passes
+            make_variant(proband_gt="0/1", gene="GENE_B"),  # het alone → fails
+            make_variant(proband_gt="0/0", gene="GENE_C"),  # hom-ref → fails
+        ]
+        results = apply_inheritance_filter(variants, mode="AR")
+        assert len(results) == 3
+        assert results[0].passes is True
+        assert results[0].mode_applied == "AR"
+        assert results[1].passes is False
+        assert results[2].passes is False
+
+    def test_apply_ar_filter_with_compound_het_gene_map(self) -> None:
+        """Batch AR filter finds a partner variant via compound_het_gene_map
+        and evaluates compound heterozygosity.
+        """
+        v1 = make_variant(
+            chrom="chr7", pos=117540000, ref="C", alt="T",
+            gene="CFTR", proband_gt="0/1",
+        )
+        v2 = make_variant(
+            chrom="chr7", pos=117548000, ref="G", alt="A",
+            gene="CFTR", proband_gt="0/1",
+        )
+        compound_het_gene_map = {"CFTR": [v1, v2]}
+
+        results = apply_inheritance_filter(
+            [v1, v2], mode="AR", compound_het_gene_map=compound_het_gene_map
+        )
+        assert len(results) == 2
+        assert results[0].passes is True, "v1 should find v2 as partner and pass AR"
+        assert "Compound heterozygous" in results[0].reason
+        assert results[1].passes is True, "v2 should find v1 as partner and pass AR"
+
+    def test_apply_ar_filter_compound_het_map_no_other_variant(self) -> None:
+        """When the gene maps only to the variant itself, no partner is found
+        and the AR filter falls through to the failing branch.
+        """
+        v1 = make_variant(gene="SOLO_GENE", proband_gt="0/1")
+        compound_het_gene_map = {"SOLO_GENE": [v1]}  # no distinct partner
+
+        results = apply_inheritance_filter(
+            [v1], mode="AR", compound_het_gene_map=compound_het_gene_map
+        )
+        assert len(results) == 1
+        assert results[0].passes is False, (
+            "No distinct partner variant available; AR filter should fail"
+        )
+
+    def test_apply_unknown_mode_passes_with_warning(self, caplog) -> None:
+        """An unrecognised inheritance mode logs a warning and passes the
+        variant through unfiltered.
+        """
+        import logging
+
+        variants = [make_variant(proband_gt="0/1", gene="GENE_X")]
+        with caplog.at_level(logging.WARNING, logger="prioritisation.inheritance_filter"):
+            results = apply_inheritance_filter(variants, mode="MITOCHONDRIAL_WEIRD")
+
+        assert len(results) == 1
+        assert results[0].passes is True
+        assert results[0].mode_applied == "MITOCHONDRIAL_WEIRD"
+        assert "Unknown mode" in results[0].reason
+        assert any("Unknown inheritance mode" in rec.message for rec in caplog.records)

@@ -32,7 +32,6 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
 
 import httpx
 
@@ -87,10 +86,10 @@ class ClinVarSubmission:
 
     submitter: str
     classification: str
-    date_last_evaluated: Optional[str] = None
-    review_status: Optional[str] = None
-    condition: Optional[str] = None
-    method: Optional[str] = None
+    date_last_evaluated: str | None = None
+    review_status: str | None = None
+    condition: str | None = None
+    method: str | None = None
 
 
 @dataclass
@@ -109,15 +108,15 @@ class ClinVarData:
         acmg_evidence: Suggested ACMG evidence code (PP5/BP6 based on stars).
     """
 
-    variation_id: Optional[str] = None
-    rcv_accession: Optional[str] = None
+    variation_id: str | None = None
+    rcv_accession: str | None = None
     star_rating: int = 0
     review_status: str = _STAR_TO_STATUS[0]
-    classification: Optional[str] = None
+    classification: str | None = None
     condition_names: list[str] = field(default_factory=list)
     submissions: list[ClinVarSubmission] = field(default_factory=list)
-    last_updated: Optional[str] = None
-    acmg_evidence: Optional[str] = None
+    last_updated: str | None = None
+    acmg_evidence: str | None = None
 
 
 class ClinVarClient:
@@ -140,7 +139,7 @@ class ClinVarClient:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
         http_timeout: float = 10.0,
     ) -> None:
         self._api_key = api_key
@@ -152,7 +151,7 @@ class ClinVarClient:
         pos: int,
         ref: str,
         alt: str,
-    ) -> Optional[ClinVarData]:
+    ) -> ClinVarData | None:
         """Retrieve ClinVar clinical significance for a variant.
 
         Queries ClinVar using SPDI notation on the GRCh38 reference sequence.
@@ -180,7 +179,7 @@ class ClinVarClient:
             logger.warning("ClinVar lookup failed for %s:%d: %s", chrom, pos, exc)
             return None
 
-    async def get_by_variation_id(self, variation_id: str) -> Optional[ClinVarData]:
+    async def get_by_variation_id(self, variation_id: str) -> ClinVarData | None:
         """Retrieve ClinVar data by variation ID (VCV accession).
 
         Args:
@@ -189,7 +188,11 @@ class ClinVarClient:
         Returns:
             ClinVarData or None if not found.
         """
-        vid = variation_id.replace("VCV", "").lstrip("0") if "VCV" in variation_id else variation_id
+        vid = (
+            variation_id.replace("VCV", "").lstrip("0")
+            if "VCV" in variation_id
+            else variation_id
+        )
         url = f"{_CLINVAR_VARIATION_API}/variation/{vid}/clinically_significant_alleles"
         params: dict[str, str] = {}
         if self._api_key:
@@ -209,7 +212,7 @@ class ClinVarClient:
     # Internal helpers
     # ------------------------------------------------------------------
 
-    async def _lookup_by_spdi(self, spdi: str) -> Optional[dict]:
+    async def _lookup_by_spdi(self, spdi: str) -> dict | None:
         """Look up a variant by SPDI notation.
 
         Args:
@@ -230,7 +233,7 @@ class ClinVarClient:
             resp.raise_for_status()
             return resp.json()  # type: ignore[return-value]
 
-    def _parse_variation(self, data: dict) -> Optional[ClinVarData]:
+    def _parse_variation(self, data: dict) -> ClinVarData | None:
         """Extract ClinVarData from a variation API response.
 
         Args:
@@ -257,9 +260,7 @@ class ClinVarClient:
 
         # Star rating from review status
         review_status_str = (
-            classification.get("review_status")
-            or record.get("review_status")
-            or ""
+            classification.get("review_status") or record.get("review_status") or ""
         )
         star_rating = _review_status_to_stars(review_status_str)
 
@@ -272,8 +273,7 @@ class ClinVarClient:
 
         # Condition names
         conditions = [
-            c.get("name", "") for c in record.get("trait_set", [])
-            if c.get("name")
+            c.get("name", "") for c in record.get("trait_set", []) if c.get("name")
         ]
 
         # Submissions
@@ -322,15 +322,32 @@ def _chrom_to_refseq(chrom_bare: str) -> str:
     """
     # GRCh38 RefSeq accessions for chromosomes 1-22, X, Y, MT
     accession_map: dict[str, str] = {
-        "1": "000001.11", "2": "000002.12", "3": "000003.12",
-        "4": "000004.12", "5": "000005.10", "6": "000006.12",
-        "7": "000007.14", "8": "000008.11", "9": "000009.12",
-        "10": "000010.11", "11": "000011.10", "12": "000012.12",
-        "13": "000013.11", "14": "000014.9", "15": "000015.10",
-        "16": "000016.10", "17": "000017.11", "18": "000018.10",
-        "19": "000019.10", "20": "000020.11", "21": "000021.9",
-        "22": "000022.11", "X": "000023.11", "Y": "000024.10",
-        "MT": "012920.1", "M": "012920.1",
+        "1": "000001.11",
+        "2": "000002.12",
+        "3": "000003.12",
+        "4": "000004.12",
+        "5": "000005.10",
+        "6": "000006.12",
+        "7": "000007.14",
+        "8": "000008.11",
+        "9": "000009.12",
+        "10": "000010.11",
+        "11": "000011.10",
+        "12": "000012.12",
+        "13": "000013.11",
+        "14": "000014.9",
+        "15": "000015.10",
+        "16": "000016.10",
+        "17": "000017.11",
+        "18": "000018.10",
+        "19": "000019.10",
+        "20": "000020.11",
+        "21": "000021.9",
+        "22": "000022.11",
+        "X": "000023.11",
+        "Y": "000024.10",
+        "MT": "012920.1",
+        "M": "012920.1",
     }
     stub = accession_map.get(chrom_bare.upper(), "000001.11")
     return stub
@@ -346,6 +363,11 @@ def _review_status_to_stars(review_status: str) -> int:
         Integer star rating 0–4.
     """
     rs = review_status.lower()
+    if "no assertion" in rs:
+        # e.g. "no assertion criteria provided" / "no assertion provided" —
+        # must be checked before the "criteria provided" substring match
+        # below, which would otherwise incorrectly award 1 star.
+        return 0
     if "practice guideline" in rs:
         return 4
     if "expert panel" in rs:
@@ -357,7 +379,7 @@ def _review_status_to_stars(review_status: str) -> int:
     return 0
 
 
-def _suggest_acmg_evidence(classification: Optional[str], stars: int) -> Optional[str]:
+def _suggest_acmg_evidence(classification: str | None, stars: int) -> str | None:
     """Suggest an ACMG/AMP evidence code based on ClinVar classification.
 
     Per ACMG/AMP 2015 guidelines and ClinGen SVI 2024:
@@ -375,7 +397,11 @@ def _suggest_acmg_evidence(classification: Optional[str], stars: int) -> Optiona
     """
     if not classification or stars < 1:
         return None
-    if classification in ("Pathogenic", "Likely pathogenic", "Pathogenic/Likely pathogenic"):
+    if classification in (
+        "Pathogenic",
+        "Likely pathogenic",
+        "Pathogenic/Likely pathogenic",
+    ):
         return "PP5"
     if classification in ("Benign", "Likely benign", "Benign/Likely benign"):
         return "BP6"

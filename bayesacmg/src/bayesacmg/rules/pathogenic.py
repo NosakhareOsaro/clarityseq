@@ -24,19 +24,25 @@ References:
 
 from __future__ import annotations
 
-from bayesacmg.models import ACMGRule, EvidenceStrength, GeneData, TranscriptData, VariantInput
+from bayesacmg.models import (
+    ACMGRule,
+    EvidenceStrength,
+    GeneData,
+    TranscriptData,
+    VariantInput,
+)
 
 # ---------------------------------------------------------------------------
 # Constants — thresholds with inline citations
 # ---------------------------------------------------------------------------
 
-_PM2_AF_THRESHOLD = 0.0001   # gnomAD v4.1 global AF cut-off; ClinGen SVI 2024
-_BA1_AF_THRESHOLD = 0.05     # >5 % → Benign; Richards 2015 PMID:25741868
-_BS1_AF_THRESHOLD = 0.01     # >1 % → BS1; ACGS 2024 v1.2 §5 Table 2
+_PM2_AF_THRESHOLD = 0.0001  # gnomAD v4.1 global AF cut-off; ClinGen SVI 2024
+_BA1_AF_THRESHOLD = 0.05  # >5 % → Benign; Richards 2015 PMID:25741868
+_BS1_AF_THRESHOLD = 0.01  # >1 % → BS1; ACGS 2024 v1.2 §5 Table 2
 
 # AlphaMissense thresholds — Cheng et al. 2023 Science PMID:37703350
-_AM_PP3_THRESHOLD = 0.564    # ≥0.564 → likely pathogenic (PP3)
-_AM_BP4_THRESHOLD = 0.340    # ≤0.340 → likely benign (BP4)
+_AM_PP3_THRESHOLD = 0.564  # ≥0.564 → likely pathogenic (PP3)
+_AM_BP4_THRESHOLD = 0.340  # ≤0.340 → likely benign (BP4)
 
 # REVEL secondary threshold — ClinGen SVI 2024 in silico recommendation
 _REVEL_PP3 = 0.7
@@ -48,10 +54,15 @@ _CADD_PP3 = 25.0
 # PVS1
 # ---------------------------------------------------------------------------
 
-_LOF_TYPES = frozenset({
-    "frameshift", "nonsense", "splice_canonical",
-    "start_loss", "stop_loss",
-})
+_LOF_TYPES = frozenset(
+    {
+        "frameshift",
+        "nonsense",
+        "splice_canonical",
+        "start_loss",
+        "stop_loss",
+    }
+)
 
 _NMD_ESCAPE_LAST_EXON_THRESHOLD = 55  # nucleotides; PVS1 decision tree
 
@@ -112,11 +123,13 @@ def rule_pvs1(
     evidence.append(f"LoF variant type: {variant.variant_type}")
 
     # Step 2: Is LoF the established disease mechanism?
-    if not gene.lof_is_disease_mechanism:
+    if not (gene.lof_is_disease_mechanism or gene.lof_mechanism):
         return ACMGRule(
             rule_id="PVS1",
             strength=EvidenceStrength.VERY_STRONG,
-            evidence_items=[f"LoF not established disease mechanism for {gene.gene_symbol}"],
+            evidence_items=[
+                f"LoF not established disease mechanism for {gene.gene_symbol}"
+            ],
             citations=citations,
             applies=False,
         )
@@ -174,6 +187,7 @@ def rule_pvs1(
 # PS1
 # ---------------------------------------------------------------------------
 
+
 def rule_ps1(
     variant: VariantInput,
     same_aa_change_pathogenic: bool,
@@ -220,6 +234,7 @@ def rule_ps1(
 # PS2
 # ---------------------------------------------------------------------------
 
+
 def rule_ps2(variant: VariantInput) -> ACMGRule:
     """PS2 — De novo variant in patient with disease and no family history.
 
@@ -262,6 +277,7 @@ def rule_ps2(variant: VariantInput) -> ACMGRule:
 # PS3
 # ---------------------------------------------------------------------------
 
+
 def rule_ps3(variant: VariantInput) -> ACMGRule:
     """PS3 — Well-established functional studies show damaging effect.
 
@@ -303,6 +319,7 @@ def rule_ps3(variant: VariantInput) -> ACMGRule:
 # PS4
 # ---------------------------------------------------------------------------
 
+
 def rule_ps4(
     variant: VariantInput,
     case_control_or_significant: bool,
@@ -329,7 +346,9 @@ def rule_ps4(
         return ACMGRule(
             rule_id="PS4",
             strength=EvidenceStrength.STRONG,
-            evidence_items=["Variant prevalence significantly elevated in affected vs controls"],
+            evidence_items=[
+                "Variant prevalence significantly elevated in affected vs controls"
+            ],
             citations=citations,
             applies=True,
         )
@@ -345,6 +364,7 @@ def rule_ps4(
 # ---------------------------------------------------------------------------
 # PM1
 # ---------------------------------------------------------------------------
+
 
 def rule_pm1(
     variant: VariantInput,
@@ -383,7 +403,9 @@ def rule_pm1(
     return ACMGRule(
         rule_id="PM1",
         strength=EvidenceStrength.MODERATE,
-        evidence_items=["Variant not in documented hotspot or critical functional domain"],
+        evidence_items=[
+            "Variant not in documented hotspot or critical functional domain"
+        ],
         citations=citations,
         applies=False,
     )
@@ -392,6 +414,7 @@ def rule_pm1(
 # ---------------------------------------------------------------------------
 # PM2 — CRITICAL: MUST return SUPPORTING (1 pt), NOT Moderate (2 pts)
 # ---------------------------------------------------------------------------
+
 
 def rule_pm2(variant: VariantInput) -> ACMGRule:
     """PM2 — Absent from or extremely rare in population databases.
@@ -438,7 +461,9 @@ def rule_pm2(variant: VariantInput) -> ACMGRule:
         return ACMGRule(
             rule_id="PM2",
             strength=EvidenceStrength.SUPPORTING,  # 1 pt — ClinGen SVI 2024
-            evidence_items=["Absent from gnomAD v4.1 (807,162 individuals, April 2024)"],
+            evidence_items=[
+                "Absent from gnomAD v4.1 (807,162 individuals, April 2024)"
+            ],
             citations=citations,
             applies=True,
             notes="PM2 applied at Supporting (1 pt) per ClinGen SVI 2024 — not Moderate",
@@ -474,6 +499,7 @@ def rule_pm2(variant: VariantInput) -> ACMGRule:
 # PM3
 # ---------------------------------------------------------------------------
 
+
 def rule_pm3(variant: VariantInput) -> ACMGRule:
     """PM3 — Detected in trans with a pathogenic variant in recessive disease.
 
@@ -495,7 +521,9 @@ def rule_pm3(variant: VariantInput) -> ACMGRule:
         return ACMGRule(
             rule_id="PM3",
             strength=EvidenceStrength.MODERATE,
-            evidence_items=["Variant detected in trans with a known pathogenic variant"],
+            evidence_items=[
+                "Variant detected in trans with a known pathogenic variant"
+            ],
             citations=citations,
             applies=True,
         )
@@ -513,6 +541,7 @@ def rule_pm3(variant: VariantInput) -> ACMGRule:
 # ---------------------------------------------------------------------------
 
 _PM4_LENGTH_CHANGE_THRESHOLD = 10  # amino acids; Richards 2015 PMID:25741868
+
 
 def rule_pm4(
     variant: VariantInput,
@@ -540,14 +569,18 @@ def rule_pm4(
         return ACMGRule(
             rule_id="PM4",
             strength=EvidenceStrength.MODERATE,
-            evidence_items=[f"Variant type '{variant.variant_type}' not in-frame indel or stop-loss"],
+            evidence_items=[
+                f"Variant type '{variant.variant_type}' not in-frame indel or stop-loss"
+            ],
             citations=citations,
             applies=False,
         )
 
     # Check protein length change if available
-    if (transcript.prot_length_original is not None
-            and transcript.prot_length_alt is not None):
+    if (
+        transcript.prot_length_original is not None
+        and transcript.prot_length_alt is not None
+    ):
         delta = abs(transcript.prot_length_alt - transcript.prot_length_original)
         if delta >= _PM4_LENGTH_CHANGE_THRESHOLD:  # ≥10 aa; Richards 2015
             return ACMGRule(
@@ -565,7 +598,9 @@ def rule_pm4(
     return ACMGRule(
         rule_id="PM4",
         strength=EvidenceStrength.MODERATE,
-        evidence_items=[f"In-frame {variant.variant_type} — protein length impact uncertain"],
+        evidence_items=[
+            f"In-frame {variant.variant_type} — protein length impact uncertain"
+        ],
         citations=citations,
         applies=True,
         notes="Protein length change <10 aa or unknown; PM4 applied provisionally",
@@ -575,6 +610,7 @@ def rule_pm4(
 # ---------------------------------------------------------------------------
 # PM5
 # ---------------------------------------------------------------------------
+
 
 def rule_pm5(
     variant: VariantInput,
@@ -621,6 +657,7 @@ def rule_pm5(
 # PM6
 # ---------------------------------------------------------------------------
 
+
 def rule_pm6(variant: VariantInput) -> ACMGRule:
     """PM6 — Assumed de novo, without confirmation of parental genotypes.
 
@@ -662,6 +699,7 @@ def rule_pm6(variant: VariantInput) -> ACMGRule:
 # ---------------------------------------------------------------------------
 # PP1
 # ---------------------------------------------------------------------------
+
 
 def rule_pp1(
     variant: VariantInput,
@@ -709,8 +747,9 @@ def rule_pp1(
 # PP2
 # ---------------------------------------------------------------------------
 
-_LOEUF_PP2_THRESHOLD = 0.35   # gnomAD LOEUF; ACGS 2024 v1.2 §5
-_PLI_PP2_THRESHOLD = 0.9      # pLI threshold; ACGS 2024 v1.2 §5
+_LOEUF_PP2_THRESHOLD = 0.35  # gnomAD LOEUF; ACGS 2024 v1.2 §5
+_PLI_PP2_THRESHOLD = 0.9  # pLI threshold; ACGS 2024 v1.2 §5
+
 
 def rule_pp2(
     variant: VariantInput,
@@ -749,15 +788,21 @@ def rule_pp2(
             applies=False,
         )
 
-    pli_high = (gene.gnomad_pli is not None and gene.gnomad_pli >= _PLI_PP2_THRESHOLD)  # ≥0.9
-    loeuf_low = (gene.gnomad_loeuf is not None and gene.gnomad_loeuf <= _LOEUF_PP2_THRESHOLD)  # ≤0.35
+    pli_high = (
+        gene.gnomad_pli is not None and gene.gnomad_pli >= _PLI_PP2_THRESHOLD
+    )  # ≥0.9
+    loeuf_low = (
+        gene.gnomad_loeuf is not None and gene.gnomad_loeuf <= _LOEUF_PP2_THRESHOLD
+    )  # ≤0.35
 
     if pli_high or loeuf_low:
         evidence_items = [f"Missense in LoF-intolerant gene {gene.gene_symbol}"]
         if pli_high:
             evidence_items.append(f"pLI={gene.gnomad_pli:.3f} (≥{_PLI_PP2_THRESHOLD})")
         if loeuf_low:
-            evidence_items.append(f"LOEUF={gene.gnomad_loeuf:.3f} (≤{_LOEUF_PP2_THRESHOLD})")
+            evidence_items.append(
+                f"LOEUF={gene.gnomad_loeuf:.3f} (≤{_LOEUF_PP2_THRESHOLD})"
+            )
         return ACMGRule(
             rule_id="PP2",
             strength=EvidenceStrength.SUPPORTING,
@@ -778,6 +823,7 @@ def rule_pp2(
 # ---------------------------------------------------------------------------
 # PP3
 # ---------------------------------------------------------------------------
+
 
 def rule_pp3(
     variant: VariantInput,
@@ -827,7 +873,9 @@ def rule_pp3(
         return ACMGRule(
             rule_id="PP3",
             strength=EvidenceStrength.SUPPORTING,
-            evidence_items=["Splice variant: use splicing.rule_splicing_pp3_bp4_bp7() instead"],
+            evidence_items=[
+                "Splice variant: use splicing.rule_splicing_pp3_bp4_bp7() instead"
+            ],
             citations=citations,
             applies=False,
             notes="PP3 for splice variants handled by rules/splicing.py per Walker 2023",
@@ -912,6 +960,7 @@ def rule_pp3(
 # PP4
 # ---------------------------------------------------------------------------
 
+
 def rule_pp4(
     variant: VariantInput,
     phenotype_highly_specific: bool,
@@ -957,6 +1006,7 @@ def rule_pp4(
 # PP5
 # ---------------------------------------------------------------------------
 
+
 def rule_pp5(variant: VariantInput) -> ACMGRule:
     """PP5 — Reputable source recently classified as pathogenic.
 
@@ -978,10 +1028,16 @@ def rule_pp5(variant: VariantInput) -> ACMGRule:
         "Richards et al. 2015 PMID:25741868",
         "ACGS 2024 v1.2 §5 Table 2",
     ]
-    pathogenic_terms = {"Pathogenic", "Likely pathogenic", "Pathogenic/Likely pathogenic"}
-    if (variant.clinvar_stars is not None
-            and variant.clinvar_stars >= 2  # ≥2 stars = expert panel or criteria provided
-            and variant.clinvar_classification in pathogenic_terms):
+    pathogenic_terms = {
+        "Pathogenic",
+        "Likely pathogenic",
+        "Pathogenic/Likely pathogenic",
+    }
+    if (
+        variant.clinvar_stars is not None
+        and variant.clinvar_stars >= 2  # ≥2 stars = expert panel or criteria provided
+        and variant.clinvar_classification in pathogenic_terms
+    ):
         return ACMGRule(
             rule_id="PP5",
             strength=EvidenceStrength.SUPPORTING,
@@ -999,6 +1055,57 @@ def rule_pp5(variant: VariantInput) -> ACMGRule:
         evidence_items=[
             f"ClinVar stars={variant.clinvar_stars}, "
             f"classification={variant.clinvar_classification} — PP5 not met"
+        ],
+        citations=citations,
+        applies=False,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Convenience aliases
+# ---------------------------------------------------------------------------
+
+
+def rule_bp4_from_alphamissense(
+    variant: VariantInput,
+    alphamissense_score: float | None = None,
+    revel_score: float | None = None,
+) -> ACMGRule:
+    """Evaluate BP4 from AlphaMissense score, returning a BP4-labelled ACMGRule.
+
+    ClinGen SVI 2024: AlphaMissense ≤ 0.340 → BP4 (Supporting Benign).
+    Returns rule_id="BP4", applies=True when score ≤ 0.340.
+    Returns rule_id="BP4", applies=False otherwise (not benign by AlphaMissense).
+
+    Reference: Cheng et al. 2023 PMID:37703350; ClinGen SVI 2024.
+    """
+    citations = [
+        "Richards et al. 2015 PMID:25741868",
+        "Cheng et al. 2023 PMID:37703350 (AlphaMissense)",
+        "ClinGen SVI Working Group 2024 — BP4 threshold ≤ 0.340",
+    ]
+
+    score = alphamissense_score
+    if score is None:
+        score = variant.alphamissense_score
+
+    if score is not None and score <= _AM_BP4_THRESHOLD:
+        return ACMGRule(
+            rule_id="BP4",
+            strength=EvidenceStrength.SUPPORTING_BENIGN,
+            evidence_items=[
+                f"AlphaMissense score {score:.3f} ≤ {_AM_BP4_THRESHOLD} "
+                "(likely benign; Cheng 2023 PMID:37703350)"
+            ],
+            citations=citations,
+            applies=True,
+        )
+
+    return ACMGRule(
+        rule_id="BP4",
+        strength=EvidenceStrength.SUPPORTING_BENIGN,
+        evidence_items=[
+            f"AlphaMissense score {score!r} > {_AM_BP4_THRESHOLD} — BP4 does not apply"
         ],
         citations=citations,
         applies=False,

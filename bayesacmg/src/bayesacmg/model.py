@@ -120,8 +120,14 @@ from typing import Any
 import arviz as az
 import numpy as np
 import pymc as pm
+from scipy import stats as _scipy_stats
 
-from bayesacmg.models import ACMGRule, ClassificationResult, EvidenceStrength, VariantInput
+from bayesacmg.models import (
+    ACMGRule,
+    ClassificationResult,
+    EvidenceStrength,
+    VariantInput,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -129,7 +135,13 @@ logger = logging.getLogger(__name__)
 # Classification category indices
 # ---------------------------------------------------------------------------
 
-CATEGORY_LABELS: list[str] = ["Pathogenic", "Likely_Pathogenic", "VUS", "Likely_Benign", "Benign"]
+CATEGORY_LABELS: list[str] = [
+    "Pathogenic",
+    "Likely_Pathogenic",
+    "VUS",
+    "Likely_Benign",
+    "Benign",
+]
 N_CATEGORIES = len(CATEGORY_LABELS)  # 5
 
 # ---------------------------------------------------------------------------
@@ -147,16 +159,16 @@ _BASE_PRIOR_ALPHA = np.array([2.0, 3.0, 5.0, 3.0, 2.0], dtype=float)
 
 # Concentration increments per evidence strength (Pathogenic direction)
 _PATHOGENIC_STRENGTH_CONC: dict[EvidenceStrength, float] = {
-    EvidenceStrength.VERY_STRONG: 8.0,   # PVS1
-    EvidenceStrength.STRONG: 4.0,        # PS
-    EvidenceStrength.MODERATE: 2.0,      # PM (not PM2 after ClinGen SVI 2024)
-    EvidenceStrength.SUPPORTING: 1.0,    # PP + PM2 (ClinGen SVI 2024)
+    EvidenceStrength.VERY_STRONG: 8.0,  # PVS1
+    EvidenceStrength.STRONG: 4.0,  # PS
+    EvidenceStrength.MODERATE: 2.0,  # PM (not PM2 after ClinGen SVI 2024)
+    EvidenceStrength.SUPPORTING: 1.0,  # PP + PM2 (ClinGen SVI 2024)
 }
 
 # Concentration increments per evidence strength (Benign direction)
 _BENIGN_STRENGTH_CONC: dict[EvidenceStrength, float] = {
     EvidenceStrength.STAND_ALONE: 10.0,  # BA1 → strong signal toward Benign
-    EvidenceStrength.STRONG_BENIGN: 4.0, # BS
+    EvidenceStrength.STRONG_BENIGN: 4.0,  # BS
     EvidenceStrength.SUPPORTING_BENIGN: 1.0,  # BP
 }
 
@@ -329,7 +341,14 @@ class BayesACMGModel:
         theta_samples = idata.posterior["theta"].values  # shape (chains, draws, 5)
         flat_samples = theta_samples.reshape(-1, N_CATEGORIES)  # (total_draws, 5)
 
-        hdi_data = az.hdi(flat_samples, hdi_prob=credible_mass)  # (5, 2)
+        # ArviZ renamed the `hdi_prob` kwarg to `prob` in ArviZ >=1.0 (the
+        # `hdi_prob` spelling is what versions matching the ">=0.18" pin in
+        # pyproject.toml historically expected). Support both so this works
+        # across the version range the dependency spec allows.
+        try:
+            hdi_data = az.hdi(flat_samples, hdi_prob=credible_mass)  # (5, 2)
+        except TypeError:
+            hdi_data = az.hdi(flat_samples, prob=credible_mass)  # ArviZ >=1.0
 
         result = {}
         for i, label in enumerate(CATEGORY_LABELS):
@@ -367,8 +386,11 @@ class BayesACMGModel:
         posterior = self.posterior_probabilities(applied)
         best_category = max(posterior, key=lambda k: posterior[k])
 
-        ci_lower: float | None = None
-        ci_upper: float | None = None
+        # Analytic CI: Beta marginal of Dirichlet (P+LP vs rest)
+        alpha = _build_dirichlet_alpha(applied)
+        alpha_pos = float(alpha[0] + alpha[1])  # P + LP concentration
+        alpha_neg = float(alpha[2] + alpha[3] + alpha[4])  # VUS + LB + B
+        ci_lower, ci_upper = _scipy_stats.beta.interval(0.95, alpha_pos, alpha_neg)
 
         if use_mcmc:
             ci = self.credible_intervals(applied)
@@ -388,8 +410,8 @@ class BayesACMGModel:
             stand_alone_benign=stand_alone,
             bayesian_posterior_p=posterior.get("Pathogenic", 0.0)
             + posterior.get("Likely_Pathogenic", 0.0),
-            credible_interval_lower=ci_lower,
-            credible_interval_upper=ci_upper,
+            credible_interval_lower=float(ci_lower),
+            credible_interval_upper=float(ci_upper),
         )
 
     def calibrate(
@@ -417,7 +439,9 @@ class BayesACMGModel:
             ClinGen curation set: https://clinicalgenome.org/
         """
         if len(reference_variants) != len(true_labels):
-            raise ValueError("reference_variants and true_labels must have equal length")
+            raise ValueError(
+                "reference_variants and true_labels must have equal length"
+            )
 
         n = len(reference_variants)
         correct = 0
@@ -448,9 +472,73 @@ class BayesACMGModel:
         if ece > 0.05:  # ECE acceptance threshold; ACGS 2024 / ClinGen SVI 2024
             logger.warning(
                 "ECE=%.4f exceeds acceptance threshold 0.05 — "
-                "model requires re-calibration", ece
+                "model requires re-calibration",
+                ece,
             )
         return {"ece": float(ece), "accuracy": float(accuracy)}
+
+    def get_criterion_prior(self, rule_id: str) -> "CriterionPrior | None":
+        """Return the Bayesian prior parameters for a specific ACMG criterion.
+
+        Returns a CriterionPrior with centre (expected point weight) and
+        concentration (confidence in that weight) for the given rule.
+
+        PM2: centre=1 (Supporting, 1 pt), concentration=5.0 — reflecting
+        the ClinGen SVI 2024 downgrade and ongoing community uncertainty.
+        PVS1: centre=8 (Very Strong), concentration=10.0 — well-established.
+
+        Returns None if the rule_id is not recognised.
+        """
+        _CRITERION_PRIORS: dict[str, "CriterionPrior"] = {
+            "PVS1": CriterionPrior(rule_id="PVS1", centre=8, concentration=10.0),
+            "PS1": CriterionPrior(rule_id="PS1", centre=4, concentration=8.0),
+            "PS2": CriterionPrior(rule_id="PS2", centre=4, concentration=8.0),
+            "PS3": CriterionPrior(rule_id="PS3", centre=4, concentration=7.0),
+            "PS4": CriterionPrior(rule_id="PS4", centre=4, concentration=7.0),
+            "PM1": CriterionPrior(rule_id="PM1", centre=2, concentration=6.0),
+            "PM2": CriterionPrior(rule_id="PM2", centre=1, concentration=5.0),
+            "PM3": CriterionPrior(rule_id="PM3", centre=2, concentration=6.0),
+            "PM4": CriterionPrior(rule_id="PM4", centre=2, concentration=6.0),
+            "PM5": CriterionPrior(rule_id="PM5", centre=2, concentration=6.0),
+            "PM6": CriterionPrior(rule_id="PM6", centre=2, concentration=5.0),
+            "PP1": CriterionPrior(rule_id="PP1", centre=1, concentration=6.0),
+            "PP2": CriterionPrior(rule_id="PP2", centre=1, concentration=5.0),
+            "PP3": CriterionPrior(rule_id="PP3", centre=1, concentration=7.0),
+            "PP4": CriterionPrior(rule_id="PP4", centre=1, concentration=5.0),
+            "PP5": CriterionPrior(rule_id="PP5", centre=1, concentration=5.0),
+            "BA1": CriterionPrior(rule_id="BA1", centre=0, concentration=10.0),
+            "BS1": CriterionPrior(rule_id="BS1", centre=-4, concentration=8.0),
+            "BS2": CriterionPrior(rule_id="BS2", centre=-4, concentration=7.0),
+            "BS3": CriterionPrior(rule_id="BS3", centre=-4, concentration=7.0),
+            "BS4": CriterionPrior(rule_id="BS4", centre=-4, concentration=6.0),
+            "BP1": CriterionPrior(rule_id="BP1", centre=-1, concentration=5.0),
+            "BP2": CriterionPrior(rule_id="BP2", centre=-1, concentration=5.0),
+            "BP3": CriterionPrior(rule_id="BP3", centre=-1, concentration=5.0),
+            "BP4": CriterionPrior(rule_id="BP4", centre=-1, concentration=7.0),
+            "BP5": CriterionPrior(rule_id="BP5", centre=-1, concentration=5.0),
+            "BP6": CriterionPrior(rule_id="BP6", centre=-1, concentration=5.0),
+            "BP7": CriterionPrior(rule_id="BP7", centre=-1, concentration=6.0),
+        }
+        return _CRITERION_PRIORS.get(rule_id)
+
+
+from dataclasses import dataclass as _dataclass  # noqa: E402
+
+
+@_dataclass
+class CriterionPrior:
+    """Bayesian prior parameters for a single ACMG/AMP criterion.
+
+    Attributes:
+        rule_id: ACMG rule identifier, e.g. ``"PM2"``.
+        centre: Expected point weight for this criterion (e.g. PM2=1, PVS1=8).
+        concentration: Dirichlet concentration parameter reflecting certainty
+            in the prior (higher = more confident; PM2=5.0 reflects 2024 uncertainty).
+    """
+
+    rule_id: str
+    centre: int
+    concentration: float
 
 
 def _compute_ece(

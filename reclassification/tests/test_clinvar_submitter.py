@@ -188,6 +188,16 @@ class TestBuildSubmissionJson:
         assert "comment" in obs
         assert "0.9987" in obs["comment"]
 
+    def test_missing_clinical_significance_raises_value_error(self, pathogenic_submission):
+        pathogenic_submission.clinical_significance = None
+        with pytest.raises(ValueError, match="clinical_significance"):
+            build_submission_json(pathogenic_submission)
+
+    def test_missing_condition_name_raises_value_error(self, pathogenic_submission):
+        pathogenic_submission.condition_name = None
+        with pytest.raises(ValueError, match="condition_name"):
+            build_submission_json(pathogenic_submission)
+
     def test_missing_gene_raises_value_error(self, missing_gene_submission):
         with pytest.raises(ValueError, match="gene_symbol"):
             build_submission_json(missing_gene_submission)
@@ -319,6 +329,24 @@ class TestSubmitVariant:
         assert result.status == SubmissionStatus.ERROR
         assert result.error_message is not None
         assert "400" in result.error_message
+
+    @patch("reclassification.clinvar_submitter.time.sleep")
+    def test_http_error_falls_back_to_response_text_when_body_not_json(
+        self, mock_sleep, pathogenic_submission
+    ):
+        """If response.json() itself raises, fall back to response.text."""
+        mock_response = Mock()
+        mock_response.status_code = 500
+        mock_response.json.side_effect = ValueError("not JSON")
+        mock_response.text = "Internal Server Error"
+        mock_response.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
+
+        with patch("requests.Session.post", return_value=mock_response):
+            result = submit_variant(pathogenic_submission)
+
+        assert result.success is False
+        assert result.status == SubmissionStatus.ERROR
+        assert "500" in result.error_message
 
     @patch("reclassification.clinvar_submitter.time.sleep")
     def test_network_error_returns_failure(self, mock_sleep, pathogenic_submission):

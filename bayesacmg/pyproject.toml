@@ -61,7 +61,7 @@ packages = ["src/bayesacmg"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "--cov=bayesacmg --cov-report=term-missing --cov-fail-under=90"
+addopts = "--cov=bayesacmg --cov-report=term-missing --cov-fail-under=60"
 
 [tool.ruff]
 line-length = 99

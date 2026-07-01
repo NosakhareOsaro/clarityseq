@@ -11,18 +11,17 @@ Guidelines implemented and tested:
     - ClinGen SVI 2024: AlphaMissense PP3/BP4 thresholds; PM2 downgrade
     - Walker et al. 2023 PMID:36898414: splicing framework
 """
+
 from __future__ import annotations
 
 import pytest
 
 from bayesacmg.models import (
-    EvidenceStrength,
     GeneData,
     TranscriptData,
     VariantInput,
     VariantType,
 )
-
 
 # ---------------------------------------------------------------------------
 # Pathogenic variant fixtures
@@ -46,7 +45,7 @@ def brca1_frameshift() -> VariantInput:
         alt="CC",
         variant_type=VariantType.FRAMESHIFT,
         gene_symbol="BRCA1",
-        transcript_id="NM_007294.4",   # MANE Select
+        transcript_id="NM_007294.4",  # MANE Select
         hgvsc="NM_007294.4:c.5266dupC",
         hgvsp="NM_007294.4(BRCA1):p.Gln1756ProfsTer74",
         gnomad_af=0.0,
@@ -74,13 +73,13 @@ def tp53_missense_pathogenic() -> VariantInput:
         alt="T",
         variant_type=VariantType.MISSENSE,
         gene_symbol="TP53",
-        transcript_id="NM_000546.6",   # MANE Select
+        transcript_id="NM_000546.6",  # MANE Select
         hgvsc="NM_000546.6:c.817C>T",
         hgvsp="NM_000546.6(TP53):p.Arg273Cys",
         gnomad_af=0.000001,
         gnomad_ac=1,
         gnomad_nhomalt=0,
-        alphamissense_score=0.97,       # ≥ 0.564 → PP3
+        alphamissense_score=0.97,  # ≥ 0.564 → PP3
         clinvar_stars=3,
         clinvar_classification="Pathogenic",
         clinvar_rcv="RCV000012735",
@@ -102,15 +101,15 @@ def brca2_novel_lof() -> VariantInput:
         alt="A",
         variant_type=VariantType.FRAMESHIFT,
         gene_symbol="BRCA2",
-        transcript_id="NM_000059.4",   # MANE Select
+        transcript_id="NM_000059.4",  # MANE Select
         hgvsc="NM_000059.4:c.6406delAAAA",
         hgvsp="NM_000059.4(BRCA2):p.Lys2136ArgfsTer2",
-        gnomad_af=0.0,                  # Absent from gnomAD v4.1 → PM2_Supporting
+        gnomad_af=0.0,  # Absent from gnomAD v4.1 → PM2_Supporting
         gnomad_ac=0,
         gnomad_nhomalt=0,
         clinvar_stars=None,
         clinvar_classification=None,
-        clinvar_rcv=None,               # Novel; no ClinVar accession
+        clinvar_rcv=None,  # Novel; no ClinVar accession
     )
 
 
@@ -138,10 +137,10 @@ def common_benign_missense() -> VariantInput:
         transcript_id="NM_016816.4",
         hgvsc="NM_016816.4:c.362G>A",
         hgvsp="NM_016816.4(OAS1):p.Arg121Gln",
-        gnomad_af=0.12,                 # >5% → BA1
+        gnomad_af=0.12,  # >5% → BA1
         gnomad_ac=96_000,
         gnomad_nhomalt=5760,
-        alphamissense_score=0.21,       # ≤ 0.340 → BP4
+        alphamissense_score=0.21,  # ≤ 0.340 → BP4
         clinvar_stars=2,
         clinvar_classification="Benign",
         clinvar_rcv="RCV000030819",
@@ -170,11 +169,11 @@ def canonical_splice_donor() -> VariantInput:
         gene_symbol="BRCA1",
         transcript_id="NM_007294.4",
         hgvsc="NM_007294.4:c.5277+1G>A",
-        hgvsp=None,                     # Splice variant — no HGVSp
+        hgvsp=None,  # Splice variant — no HGVSp
         gnomad_af=0.0,
         gnomad_ac=0,
         gnomad_nhomalt=0,
-        spliceai_delta=0.95,            # ≥ 0.5 → PP3 Strong
+        spliceai_delta=0.95,  # ≥ 0.5 → PP3 Strong
         clinvar_stars=3,
         clinvar_classification="Pathogenic",
         clinvar_rcv="RCV000048342",
@@ -201,7 +200,7 @@ def synonymous_no_splice_impact() -> VariantInput:
         gnomad_af=0.000008,
         gnomad_ac=6,
         gnomad_nhomalt=0,
-        spliceai_delta=0.03,            # < 0.1 → no splice impact
+        spliceai_delta=0.03,  # < 0.1 → no splice impact
         clinvar_stars=1,
         clinvar_classification="Likely Benign",
         clinvar_rcv=None,
@@ -230,11 +229,11 @@ def mito_haplogroup_defining() -> VariantInput:
         transcript_id="NC_012920.1",
         hgvsc="NC_012920.1:m.8860A>G",
         hgvsp=None,
-        gnomad_af=0.85,                 # Very common — haplogroup-defining
+        gnomad_af=0.85,  # Very common — haplogroup-defining
         gnomad_ac=700_000,
         gnomad_nhomalt=None,
         is_mito=True,
-        is_haplogroup_defining=True,    # Haplogrep3 output
+        is_haplogroup_defining=True,  # Haplogrep3 output
     )
 
 
@@ -249,9 +248,9 @@ def brca1_transcript() -> TranscriptData:
     return TranscriptData(
         transcript_id="NM_007294.4",
         gene_symbol="BRCA1",
-        is_mane_select=True,            # MANE Select — required for PVS1 full strength
+        is_mane_select=True,  # MANE Select — required for PVS1 full strength
         is_canonical=True,
-        lof_disease_mechanism=True,     # LoF is known disease mechanism (AD breast cancer)
+        lof_disease_mechanism=True,  # LoF is known disease mechanism (AD breast cancer)
         exon_count=23,
     )
 
@@ -263,7 +262,7 @@ def brca1_gene() -> GeneData:
         gene_symbol="BRCA1",
         omim_id="OMIM:113705",
         lof_mechanism=True,
-        missense_constraint_z=3.72,     # High constraint (gnomAD)
-        pli=0.999,                      # High pLI — intolerant of LoF
-        has_vcep_specification=True,    # BRCA Exchange VCEP
+        missense_constraint_z=3.72,  # High constraint (gnomAD)
+        pli=0.999,  # High pLI — intolerant of LoF
+        has_vcep_specification=True,  # BRCA Exchange VCEP
     )

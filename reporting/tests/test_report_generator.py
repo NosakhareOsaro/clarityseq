@@ -22,7 +22,9 @@ References:
 
 from __future__ import annotations
 
+import importlib
 import json
+import sys
 from datetime import date
 from pathlib import Path
 from typing import Any
@@ -396,3 +398,218 @@ class TestGenerateOutput:
         assert "Supporting" in pm2_weight, (
             f"Audit should record PM2=Supporting (ClinGen SVI 2024): {pm2_weight}"
         )
+
+
+# ---------------------------------------------------------------------------
+# ReportConfig defaults
+# ---------------------------------------------------------------------------
+
+
+class TestReportConfigDefaults:
+    """Tests for ReportConfig.__post_init__ default report_date."""
+
+    def test_report_date_defaults_to_today_when_not_provided(self) -> None:
+        """report_date defaults to today's UTC date when not supplied."""
+        from datetime import datetime, timezone
+
+        from reporting.report_generator import ReportConfig
+
+        config = ReportConfig(patient_id="P-DEFAULT", sample_id="S-DEFAULT")
+        expected = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        assert config.report_date == expected, (
+            "report_date should default to today's date (UTC) when not provided"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Invalid report_date handling (VUS review scheduling fallback)
+# ---------------------------------------------------------------------------
+
+
+class TestInvalidReportDateFallback:
+    """Tests for the ValueError fallback in _schedule_vus_reviews."""
+
+    def test_invalid_report_date_falls_back_to_today(self, vus_variant) -> None:
+        """A malformed report_date falls back to date.today() for VUS scheduling."""
+        from reporting.report_generator import ReportConfig, ReportGenerator
+
+        config = ReportConfig(
+            patient_id="P-BADDATE",
+            sample_id="S-BADDATE",
+            report_date="not-a-real-date",
+        )
+        ReportGenerator(config=config, variants=[vus_variant])
+
+        assert vus_variant.review_date is not None
+        review_dt = date.fromisoformat(vus_variant.review_date)
+        expected_year = date.today().year + 2
+        assert review_dt.year == expected_year, (
+            "Invalid report_date should fall back to today's date for VUS "
+            f"review scheduling; expected review year {expected_year}, "
+            f"got {review_dt.year}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Jinja2-unavailable fallback (module import branch)
+# ---------------------------------------------------------------------------
+
+
+class TestJinja2UnavailableFallback:
+    """Tests for behaviour when Jinja2 cannot be imported."""
+
+    def test_render_html_fallback_used_when_jinja2_unavailable(self, monkeypatch) -> None:
+        """When Jinja2 import fails, module falls back to _JINJA2_AVAILABLE=False
+        and _render_html() uses the minimal HTML fallback renderer.
+        """
+        import reporting.report_generator as rg
+
+        monkeypatch.setitem(sys.modules, "jinja2", None)
+        importlib.reload(rg)
+        try:
+            assert rg._JINJA2_AVAILABLE is False, (
+                "Module should record Jinja2 as unavailable after ImportError"
+            )
+            assert rg._jinja_env is None
+
+            config = rg.ReportConfig(
+                patient_id="P-NOJINJA",
+                sample_id="S-NOJINJA",
+                report_date="2024-12-13",
+            )
+            gen = rg.ReportGenerator(config=config, variants=[])
+            html = gen._render_html()
+            assert "<!DOCTYPE html>" in html
+            assert "NHS GMS WGS Clinical Report" in html
+            assert "P-NOJINJA" in html
+        finally:
+            monkeypatch.undo()
+            importlib.reload(rg)
+            assert rg._JINJA2_AVAILABLE is True, (
+                "Module state must be restored after test for other tests to run correctly"
+            )
+
+    def test_render_html_falls_back_on_template_exception(
+        self, sample_config, pathogenic_variant, monkeypatch
+    ) -> None:
+        """If Jinja2 template rendering raises, _render_html falls back to the
+        minimal HTML renderer instead of propagating the exception.
+        """
+        import reporting.report_generator as rg
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("template rendering broke")
+
+        assert rg._jinja_env is not None
+        monkeypatch.setattr(rg._jinja_env, "get_template", boom)
+
+        gen = rg.ReportGenerator(config=sample_config, variants=[pathogenic_variant])
+        html = gen._render_html()
+        assert "<!DOCTYPE html>" in html, (
+            "Fallback HTML should be used when template rendering raises"
+        )
+        assert "TEST-PATIENT-001" in html
+
+
+# ---------------------------------------------------------------------------
+# _render_html_fallback content tests
+# ---------------------------------------------------------------------------
+
+
+class TestRenderHtmlFallbackContent:
+    """Direct tests of _render_html_fallback() content and formatting."""
+
+    def test_fallback_includes_variant_row_fields(
+        self, sample_config, vus_variant
+    ) -> None:
+        """Fallback HTML includes gnomAD AF, AlphaMissense score, and P(Path)."""
+        from reporting.report_generator import ReportGenerator
+
+        gen = ReportGenerator(config=sample_config, variants=[vus_variant])
+        html = gen._render_html_fallback()
+        assert "SCN1A" in html
+        assert "0.450" in html, "AlphaMissense score should be formatted to 3 dp"
+        assert "0.550" in html, "Posterior probability should appear formatted to 3 dp"
+
+    def test_fallback_handles_missing_af_and_am_score(
+        self, sample_config, pathogenic_variant
+    ) -> None:
+        """Fallback HTML shows 'absent' for missing gnomAD AF and 'N/A' for AM score."""
+        from reporting.report_generator import ReportGenerator
+
+        gen = ReportGenerator(config=sample_config, variants=[pathogenic_variant])
+        html = gen._render_html_fallback()
+        assert "absent" in html, "Missing gnomAD AF should render as 'absent'"
+        assert "N/A" in html, "Missing AlphaMissense score should render as 'N/A'"
+
+    def test_fallback_summary_counts(
+        self, sample_config, pathogenic_variant, vus_variant, novel_lp_variant
+    ) -> None:
+        """Fallback HTML summary reports correct total/VUS/pending-ClinVar counts."""
+        from reporting.report_generator import ReportGenerator
+
+        gen = ReportGenerator(
+            config=sample_config,
+            variants=[pathogenic_variant, vus_variant, novel_lp_variant],
+        )
+        html = gen._render_html_fallback()
+        assert "Total variants reported: <strong>3</strong>" in html
+        assert "VUS: <strong>1</strong>" in html
+        assert "Pending ClinVar submissions: <strong>1</strong>" in html
+
+
+# ---------------------------------------------------------------------------
+# generate() PDF branch tests
+# ---------------------------------------------------------------------------
+
+
+class TestGeneratePdfBranch:
+    """Tests for the PDF-generation branch of generate()."""
+
+    def test_generate_pdf_true_without_weasyprint_still_returns_html_and_audit(
+        self, tmp_path: Path, sample_config, pathogenic_variant
+    ) -> None:
+        """When generate_pdf=True but WeasyPrint is unavailable/fails, the PDF
+        generation exception is caught and HTML/audit outputs are still produced.
+        """
+        from reporting.report_generator import ReportGenerator
+
+        gen = ReportGenerator(config=sample_config, variants=[pathogenic_variant])
+        outputs = gen.generate(output_dir=tmp_path, generate_pdf=True)
+
+        assert "html" in outputs
+        assert "audit" in outputs
+        assert outputs["html"].exists()
+        assert outputs["audit"].exists()
+        # PDF may or may not be present depending on WeasyPrint availability,
+        # but generate() must not raise.
+
+    def test_generate_pdf_success_adds_pdf_output(
+        self, tmp_path: Path, sample_config, pathogenic_variant
+    ) -> None:
+        """When PDF rendering succeeds, generate() includes a 'pdf' output path."""
+        from unittest.mock import patch
+
+        from reporting.report_generator import ReportGenerator
+
+        def fake_render_pdf(html_path: Path, pdf_path: Path) -> Path:
+            pdf_path.write_bytes(b"%PDF-1.4 fake pdf content")
+            return pdf_path
+
+        gen = ReportGenerator(config=sample_config, variants=[pathogenic_variant])
+        with patch("reporting.pdf_renderer.render_pdf", side_effect=fake_render_pdf):
+            outputs = gen.generate(output_dir=tmp_path, generate_pdf=True)
+
+        assert "pdf" in outputs, "generate() should include 'pdf' key on success"
+        assert outputs["pdf"].exists()
+        assert outputs["pdf"].read_bytes().startswith(b"%PDF")
+
+    def test_generate_pdf_false_skips_pdf_output(
+        self, tmp_path: Path, sample_config, pathogenic_variant
+    ) -> None:
+        """generate_pdf=False produces no 'pdf' key in outputs."""
+        from reporting.report_generator import ReportGenerator
+
+        gen = ReportGenerator(config=sample_config, variants=[pathogenic_variant])
+        outputs = gen.generate(output_dir=tmp_path, generate_pdf=False)
+        assert "pdf" not in outputs

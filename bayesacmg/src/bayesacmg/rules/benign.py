@@ -19,22 +19,30 @@ References:
 
 from __future__ import annotations
 
-from bayesacmg.models import ACMGRule, EvidenceStrength, GeneData, TranscriptData, VariantInput
+from bayesacmg.models import (
+    ACMGRule,
+    EvidenceStrength,
+    GeneData,
+    TranscriptData,
+    VariantInput,
+    VariantType,
+)
 
 # ---------------------------------------------------------------------------
 # Thresholds — each with inline citation
 # ---------------------------------------------------------------------------
 
-_BA1_AF_THRESHOLD = 0.05      # >5 % in any gnomAD population → Benign stand-alone
-                               # Richards 2015 PMID:25741868; NOT for mito — see mito.py
-_BS1_AF_THRESHOLD = 0.01      # >1 % → BS1; ACGS 2024 v1.2 §5 Table 2
-_AM_BP4_THRESHOLD = 0.340     # AlphaMissense ≤0.340 → BP4; Cheng 2023 PMID:37703350
-_AM_PP3_THRESHOLD = 0.564     # AlphaMissense ≥0.564 → PP3; Cheng 2023 PMID:37703350
+_BA1_AF_THRESHOLD = 0.05  # >5 % in any gnomAD population → Benign stand-alone
+# Richards 2015 PMID:25741868; NOT for mito — see mito.py
+_BS1_AF_THRESHOLD = 0.01  # >1 % → BS1; ACGS 2024 v1.2 §5 Table 2
+_AM_BP4_THRESHOLD = 0.340  # AlphaMissense ≤0.340 → BP4; Cheng 2023 PMID:37703350
+_AM_PP3_THRESHOLD = 0.564  # AlphaMissense ≥0.564 → PP3; Cheng 2023 PMID:37703350
 
 
 # ---------------------------------------------------------------------------
 # BA1
 # ---------------------------------------------------------------------------
+
 
 def rule_ba1(variant: VariantInput) -> ACMGRule:
     """BA1 — Allele frequency >5% in gnomAD v4.1 → Stand-alone Benign.
@@ -67,7 +75,9 @@ def rule_ba1(variant: VariantInput) -> ACMGRule:
         return ACMGRule(
             rule_id="BA1",
             strength=EvidenceStrength.STAND_ALONE,
-            evidence_items=["Mito variant: standard BA1 threshold does not apply — use rule_mito_ba1()"],
+            evidence_items=[
+                "Mito variant: standard BA1 threshold does not apply — use rule_mito_ba1()"
+            ],
             citations=citations,
             applies=False,
             notes="ACGS 2024 §6: standard 5% AF threshold is not valid for mito variants",
@@ -78,7 +88,9 @@ def rule_ba1(variant: VariantInput) -> ACMGRule:
     if af_to_check is None:
         af_to_check = variant.gnomad_af
 
-    if af_to_check is not None and af_to_check > _BA1_AF_THRESHOLD:  # >5%; Richards 2015
+    if (
+        af_to_check is not None and af_to_check > _BA1_AF_THRESHOLD
+    ):  # >5%; Richards 2015
         return ACMGRule(
             rule_id="BA1",
             strength=EvidenceStrength.STAND_ALONE,
@@ -93,7 +105,9 @@ def rule_ba1(variant: VariantInput) -> ACMGRule:
     return ACMGRule(
         rule_id="BA1",
         strength=EvidenceStrength.STAND_ALONE,
-        evidence_items=[f"AF={af_to_check} does not exceed BA1 threshold ({_BA1_AF_THRESHOLD})"],
+        evidence_items=[
+            f"AF={af_to_check} does not exceed BA1 threshold ({_BA1_AF_THRESHOLD})"
+        ],
         citations=citations,
         applies=False,
     )
@@ -102,6 +116,7 @@ def rule_ba1(variant: VariantInput) -> ACMGRule:
 # ---------------------------------------------------------------------------
 # BS1
 # ---------------------------------------------------------------------------
+
 
 def rule_bs1(variant: VariantInput) -> ACMGRule:
     """BS1 — Allele frequency greater than expected for the disorder.
@@ -145,6 +160,7 @@ def rule_bs1(variant: VariantInput) -> ACMGRule:
 # BS2
 # ---------------------------------------------------------------------------
 
+
 def rule_bs2(
     variant: VariantInput,
     observed_in_healthy_adults: bool,
@@ -174,12 +190,18 @@ def rule_bs2(
     ]
     gnomad_homalt = variant.gnomad_nhomalt or 0
     effective_hom = max(n_healthy_homozygotes, gnomad_homalt)
-    if observed_in_healthy_adults or effective_hom >= 2:  # ≥2 homozygotes → strong benign signal
+    if (
+        observed_in_healthy_adults or effective_hom >= 2
+    ):  # ≥2 homozygotes → strong benign signal
         evidence = []
         if observed_in_healthy_adults:
-            evidence.append("Observed in healthy unaffected adults with full penetrance expected")
+            evidence.append(
+                "Observed in healthy unaffected adults with full penetrance expected"
+            )
         if effective_hom >= 2:
-            evidence.append(f"gnomAD v4.1: {effective_hom} homozygous individuals (unaffected)")
+            evidence.append(
+                f"gnomAD v4.1: {effective_hom} homozygous individuals (unaffected)"
+            )
         return ACMGRule(
             rule_id="BS2",
             strength=EvidenceStrength.STRONG_BENIGN,
@@ -199,6 +221,7 @@ def rule_bs2(
 # ---------------------------------------------------------------------------
 # BS3
 # ---------------------------------------------------------------------------
+
 
 def rule_bs3(variant: VariantInput) -> ACMGRule:
     """BS3 — Well-established functional studies show no damaging effect.
@@ -221,7 +244,9 @@ def rule_bs3(variant: VariantInput) -> ACMGRule:
         return ACMGRule(
             rule_id="BS3",
             strength=EvidenceStrength.STRONG_BENIGN,
-            evidence_items=["Well-established functional study demonstrates no damaging effect"],
+            evidence_items=[
+                "Well-established functional study demonstrates no damaging effect"
+            ],
             citations=citations,
             applies=True,
         )
@@ -237,6 +262,7 @@ def rule_bs3(variant: VariantInput) -> ACMGRule:
 # ---------------------------------------------------------------------------
 # BS4
 # ---------------------------------------------------------------------------
+
 
 def rule_bs4(
     variant: VariantInput,
@@ -264,14 +290,18 @@ def rule_bs4(
         return ACMGRule(
             rule_id="BS4",
             strength=EvidenceStrength.STRONG_BENIGN,
-            evidence_items=["Variant does not segregate with disease in affected family members"],
+            evidence_items=[
+                "Variant does not segregate with disease in affected family members"
+            ],
             citations=citations,
             applies=True,
         )
     return ACMGRule(
         rule_id="BS4",
         strength=EvidenceStrength.STRONG_BENIGN,
-        evidence_items=["Lack of segregation data or segregation supports pathogenicity"],
+        evidence_items=[
+            "Lack of segregation data or segregation supports pathogenicity"
+        ],
         citations=citations,
         applies=False,
     )
@@ -280,6 +310,7 @@ def rule_bs4(
 # ---------------------------------------------------------------------------
 # BP1
 # ---------------------------------------------------------------------------
+
 
 def rule_bp1(
     variant: VariantInput,
@@ -339,6 +370,7 @@ def rule_bp1(
 # BP2
 # ---------------------------------------------------------------------------
 
+
 def rule_bp2(
     variant: VariantInput,
     in_trans_with_pathogenic_dominant: bool,
@@ -367,14 +399,18 @@ def rule_bp2(
         return ACMGRule(
             rule_id="BP2",
             strength=EvidenceStrength.SUPPORTING_BENIGN,
-            evidence_items=["Observed in trans with pathogenic variant in dominant disorder"],
+            evidence_items=[
+                "Observed in trans with pathogenic variant in dominant disorder"
+            ],
             citations=citations,
             applies=True,
         )
     return ACMGRule(
         rule_id="BP2",
         strength=EvidenceStrength.SUPPORTING_BENIGN,
-        evidence_items=["Not observed in trans with pathogenic variant in dominant disorder"],
+        evidence_items=[
+            "Not observed in trans with pathogenic variant in dominant disorder"
+        ],
         citations=citations,
         applies=False,
     )
@@ -383,6 +419,7 @@ def rule_bp2(
 # ---------------------------------------------------------------------------
 # BP3
 # ---------------------------------------------------------------------------
+
 
 def rule_bp3(
     variant: VariantInput,
@@ -413,7 +450,9 @@ def rule_bp3(
         return ACMGRule(
             rule_id="BP3",
             strength=EvidenceStrength.SUPPORTING_BENIGN,
-            evidence_items=["In-frame indel within repeat region without known function"],
+            evidence_items=[
+                "In-frame indel within repeat region without known function"
+            ],
             citations=citations,
             applies=True,
         )
@@ -430,10 +469,11 @@ def rule_bp3(
 # BP4
 # ---------------------------------------------------------------------------
 
+
 def rule_bp4(
     variant: VariantInput,
-    alphamissense_score: float | None,
-    revel_score: float | None,
+    alphamissense_score: float | None = None,
+    revel_score: float | None = None,
 ) -> ACMGRule:
     """BP4 — Multiple computational evidence suggest no impact on gene/product.
 
@@ -469,7 +509,9 @@ def rule_bp4(
         return ACMGRule(
             rule_id="BP4",
             strength=EvidenceStrength.SUPPORTING_BENIGN,
-            evidence_items=["Splice variant: use splicing.rule_splicing_pp3_bp4_bp7() instead"],
+            evidence_items=[
+                "Splice variant: use splicing.rule_splicing_pp3_bp4_bp7() instead"
+            ],
             citations=citations,
             applies=False,
             notes="BP4 for splice variants handled by rules/splicing.py",
@@ -527,6 +569,7 @@ def rule_bp4(
 # BP5
 # ---------------------------------------------------------------------------
 
+
 def rule_bp5(
     variant: VariantInput,
     alternate_molecular_basis_found: bool,
@@ -553,7 +596,9 @@ def rule_bp5(
         return ACMGRule(
             rule_id="BP5",
             strength=EvidenceStrength.SUPPORTING_BENIGN,
-            evidence_items=["Alternate molecular basis found that fully explains the phenotype"],
+            evidence_items=[
+                "Alternate molecular basis found that fully explains the phenotype"
+            ],
             citations=citations,
             applies=True,
         )
@@ -569,6 +614,7 @@ def rule_bp5(
 # ---------------------------------------------------------------------------
 # BP6
 # ---------------------------------------------------------------------------
+
 
 def rule_bp6(variant: VariantInput) -> ACMGRule:
     """BP6 — Reputable source recently reported as benign.
@@ -592,9 +638,11 @@ def rule_bp6(variant: VariantInput) -> ACMGRule:
         "ACGS 2024 v1.2 §5 Table 2",
     ]
     benign_terms = {"Benign", "Likely benign", "Benign/Likely benign"}
-    if (variant.clinvar_stars is not None
-            and variant.clinvar_stars >= 2
-            and variant.clinvar_classification in benign_terms):
+    if (
+        variant.clinvar_stars is not None
+        and variant.clinvar_stars >= 2
+        and variant.clinvar_classification in benign_terms
+    ):
         return ACMGRule(
             rule_id="BP6",
             strength=EvidenceStrength.SUPPORTING_BENIGN,
@@ -608,7 +656,9 @@ def rule_bp6(variant: VariantInput) -> ACMGRule:
     return ACMGRule(
         rule_id="BP6",
         strength=EvidenceStrength.SUPPORTING_BENIGN,
-        evidence_items=["ClinVar does not meet BP6 criteria (insufficient stars or not benign)"],
+        evidence_items=[
+            "ClinVar does not meet BP6 criteria (insufficient stars or not benign)"
+        ],
         citations=citations,
         applies=False,
     )
@@ -618,10 +668,15 @@ def rule_bp6(variant: VariantInput) -> ACMGRule:
 # BP7
 # ---------------------------------------------------------------------------
 
+
 def rule_bp7(
     variant: VariantInput,
-    transcript: TranscriptData,
-    no_splice_impact: bool,
+    transcript: TranscriptData | None = None,
+    no_splice_impact: bool | None = None,
+    spliceai_delta: (
+        float | None
+    ) = None,  # alternative: derive no_splice_impact from score
+    spliceai_score: float | None = None,  # alias for spliceai_delta
 ) -> ACMGRule:
     """BP7 — Synonymous variant with no predicted splice impact.
 
@@ -648,7 +703,20 @@ def rule_bp7(
         "Walker et al. 2023 PMID:36898414 (SpliceAI BP7 threshold)",
         "ACGS 2024 v1.2 §5 Table 2",
     ]
-    if variant.variant_type == "synonymous" and no_splice_impact:
+    # Resolve no_splice_impact from SpliceAI score if not explicitly provided
+    if no_splice_impact is None:
+        delta = (
+            spliceai_delta
+            or spliceai_score
+            or variant.spliceai_delta
+            or variant.spliceai_max_delta
+        )
+        no_splice_impact = delta is not None and delta < 0.1
+
+    if (
+        variant.variant_type in ("synonymous", VariantType.SYNONYMOUS)
+        and no_splice_impact
+    ):
         return ACMGRule(
             rule_id="BP7",
             strength=EvidenceStrength.SUPPORTING_BENIGN,

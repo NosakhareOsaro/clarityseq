@@ -41,7 +41,6 @@ from __future__ import annotations
 import logging
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -147,7 +146,7 @@ def is_mane_select(transcript_id: str) -> bool:
     return False
 
 
-def get_mane_select_for_gene(gene_symbol: str) -> Optional[str]:
+def get_mane_select_for_gene(gene_symbol: str) -> str | None:
     """Return the MANE Select RefSeq transcript ID for a gene symbol.
 
     Args:
@@ -167,7 +166,7 @@ def get_mane_select_for_gene(gene_symbol: str) -> Optional[str]:
     return entry[0] if entry else None
 
 
-def get_mane_select_ensembl_for_gene(gene_symbol: str) -> Optional[str]:
+def get_mane_select_ensembl_for_gene(gene_symbol: str) -> str | None:
     """Return the MANE Select Ensembl transcript ID for a gene symbol.
 
     Args:
@@ -288,5 +287,7 @@ def load_mane_summary(summary_path: str) -> dict[str, tuple[str, str]]:
     except OSError as exc:
         logger.error("Failed to load MANE summary: %s", exc)
 
-    logger.info("Loaded %d MANE Select transcripts from %s", len(registry), summary_path)
+    logger.info(
+        "Loaded %d MANE Select transcripts from %s", len(registry), summary_path
+    )
     return registry

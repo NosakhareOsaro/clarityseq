@@ -9,12 +9,12 @@ Guidelines:
     ClinGen SVI 2024 (BP4 via AlphaMissense ≤ 0.340)
     ACGS 2024 v1.2 §5 (BA1, BS1 thresholds)
 """
+
 from __future__ import annotations
 
-import pytest
 
-from bayesacmg.models import EvidenceStrength, VariantInput, VariantType
-from bayesacmg.rules.benign import rule_ba1, rule_bs1, rule_bp4, rule_bp7
+from bayesacmg.models import EvidenceStrength, VariantInput
+from bayesacmg.rules.benign import rule_ba1, rule_bp4, rule_bp7
 
 
 class TestBA1:
@@ -33,20 +33,43 @@ class TestBA1:
         assert result.strength == EvidenceStrength.STAND_ALONE
         assert result.rule_id == "BA1"
 
-    def test_ba1_does_not_fire_for_rare_variant(self, brca2_novel_lof: VariantInput) -> None:
+    def test_ba1_does_not_fire_for_rare_variant(
+        self, brca2_novel_lof: VariantInput
+    ) -> None:
         """AF = 0 (absent) → BA1 does NOT apply."""
         result = rule_ba1(brca2_novel_lof)
         assert result.applies is False
 
-    def test_ba1_threshold_is_five_percent(self, common_benign_missense: VariantInput) -> None:
+    def test_ba1_does_not_apply_to_mito_variants(
+        self, mito_haplogroup_defining: VariantInput
+    ) -> None:
+        """Standard BA1 must NOT fire for mito variants, even at high AF.
+
+        ACGS 2024 §6: the standard nuclear 5% AF threshold does not apply to
+        mitochondrial variants. Callers must use rule_mito_ba1() instead
+        (see rules/mito.py). This variant has AF=0.85 (>5%) but is_mito=True.
+        """
+        assert mito_haplogroup_defining.is_mito is True
+        result = rule_ba1(mito_haplogroup_defining)
+        assert result.applies is False
+        assert result.rule_id == "BA1"
+        assert "mito" in " ".join(result.evidence_items).lower()
+
+    def test_ba1_threshold_is_five_percent(
+        self, common_benign_missense: VariantInput
+    ) -> None:
         """Verify BA1 threshold is 5% (0.05), not 1% or 10%."""
         # Variant just above threshold
-        variant_above = VariantInput(**{**common_benign_missense.__dict__, "gnomad_af": 0.051})
+        variant_above = VariantInput(
+            **{**common_benign_missense.__dict__, "gnomad_af": 0.051}
+        )
         result_above = rule_ba1(variant_above)
         assert result_above.applies is True, "AF > 5% should trigger BA1"
 
         # Variant just below threshold
-        variant_below = VariantInput(**{**common_benign_missense.__dict__, "gnomad_af": 0.049})
+        variant_below = VariantInput(
+            **{**common_benign_missense.__dict__, "gnomad_af": 0.049}
+        )
         result_below = rule_ba1(variant_below)
         assert result_below.applies is False, "AF < 5% should NOT trigger BA1"
 
@@ -114,8 +137,8 @@ class TestBP7:
         """Synonymous variant WITH splice impact (SpliceAI ≥ 0.1) → BP7 does not apply."""
         result = rule_bp7(
             variant=synonymous_no_splice_impact,
-            spliceai_delta=0.45,   # significant splice impact
+            spliceai_delta=0.45,  # significant splice impact
         )
-        assert result.applies is False, (
-            "BP7 should not apply when SpliceAI ≥ 0.1 even for synonymous variants"
-        )
+        assert (
+            result.applies is False
+        ), "BP7 should not apply when SpliceAI ≥ 0.1 even for synonymous variants"

@@ -13,24 +13,20 @@ Guidelines:
     ACGS 2024 v1.2 — UK implementation; MANE Select; PVS1 MANE adjustment
     Abou Tayoun et al. 2018 PMID:30192042 — PVS1 decision tree
 """
+
 from __future__ import annotations
 
-import pytest
 
 from bayesacmg.models import (
     EvidenceStrength,
     VariantInput,
-    VariantType,
 )
 from bayesacmg.rules.pathogenic import (
     rule_pm2,
     rule_pp3,
     rule_pvs1,
-    rule_ps1,
-    rule_pm1,
 )
 from bayesacmg.combinations import apply_novel_combinations, compute_total_points
-
 
 # ===========================================================================
 # PM2 — CRITICAL: Must return SUPPORTING (1 pt), not Moderate (2 pts)
@@ -45,7 +41,9 @@ class TestPM2:
     gnomAD v4.1 evidence: ultra-rare variants are common; rarity is weak evidence.
     """
 
-    def test_pm2_returns_supporting_not_moderate(self, brca2_novel_lof: VariantInput) -> None:
+    def test_pm2_returns_supporting_not_moderate(
+        self, brca2_novel_lof: VariantInput
+    ) -> None:
         """PM2 on absent variant MUST return SUPPORTING weight.
 
         This is the most critical correctness test in the test suite.
@@ -56,7 +54,9 @@ class TestPM2:
         Expected: PM2 fires with EvidenceStrength.SUPPORTING (1 pt)
         """
         result = rule_pm2(brca2_novel_lof)
-        assert result.applies is True, "PM2 should apply for variant absent from gnomAD v4.1"
+        assert (
+            result.applies is True
+        ), "PM2 should apply for variant absent from gnomAD v4.1"
         assert result.strength == EvidenceStrength.SUPPORTING, (
             f"PM2 MUST return SUPPORTING (1 pt) per ClinGen SVI 2024, "
             f"but returned {result.strength}. "
@@ -78,6 +78,7 @@ class TestPM2:
     def test_pm2_point_value_is_one(self, brca2_novel_lof: VariantInput) -> None:
         """PM2 SUPPORTING strength must give exactly 1 point."""
         from bayesacmg.models import STRENGTH_POINTS
+
         result = rule_pm2(brca2_novel_lof)
         points = STRENGTH_POINTS[result.strength]
         assert points == 1, (
@@ -100,8 +101,7 @@ class TestPM2:
         result = rule_pm2(brca2_novel_lof)
         citations_str = " ".join(result.citations).lower()
         assert any(
-            term in citations_str
-            for term in ["clingen", "svi", "2024", "pm2"]
+            term in citations_str for term in ["clingen", "svi", "2024", "pm2"]
         ), f"PM2 should cite ClinGen SVI 2024. Got citations: {result.citations}"
 
 
@@ -134,7 +134,9 @@ class TestPP3:
         assert result.applies is True
         assert result.rule_id == "PP3"
 
-    def test_pp3_alphamissense_exact_threshold(self, tp53_missense_pathogenic: VariantInput) -> None:
+    def test_pp3_alphamissense_exact_threshold(
+        self, tp53_missense_pathogenic: VariantInput
+    ) -> None:
         """AlphaMissense score exactly at 0.564 threshold → PP3 applies."""
         result = rule_pp3(
             variant=tp53_missense_pathogenic,
@@ -157,16 +159,19 @@ class TestPP3:
             "(ambiguous range 0.340–0.564)"
         )
 
-    def test_bp4_alphamissense_at_threshold(self, common_benign_missense: VariantInput) -> None:
+    def test_bp4_alphamissense_at_threshold(
+        self, common_benign_missense: VariantInput
+    ) -> None:
         """AlphaMissense score ≤ 0.340 → BP4 applies (benign supporting).
 
         The BP4 rule is tested here via the PP3 function which returns BP4
         when AlphaMissense score is ≤ 0.340.
         """
         from bayesacmg.rules.pathogenic import rule_bp4_from_alphamissense
+
         result = rule_bp4_from_alphamissense(
             variant=common_benign_missense,
-            alphamissense_score=0.21,   # ≤ 0.340 → BP4
+            alphamissense_score=0.21,  # ≤ 0.340 → BP4
         )
         assert result.applies is True
         assert result.rule_id == "BP4"
@@ -177,22 +182,25 @@ class TestPP3:
     ) -> None:
         """AlphaMissense score exactly at 0.340 → BP4 applies."""
         from bayesacmg.rules.pathogenic import rule_bp4_from_alphamissense
+
         result = rule_bp4_from_alphamissense(
             variant=common_benign_missense,
             alphamissense_score=0.340,  # exact threshold
         )
         assert result.applies is True, "Score exactly at 0.340 should trigger BP4"
 
-    def test_ambiguous_range_no_evidence(self, tp53_missense_pathogenic: VariantInput) -> None:
+    def test_ambiguous_range_no_evidence(
+        self, tp53_missense_pathogenic: VariantInput
+    ) -> None:
         """AlphaMissense score in ambiguous range (0.341–0.563) → no evidence."""
         result = rule_pp3(
             variant=tp53_missense_pathogenic,
-            alphamissense_score=0.45,   # ambiguous range
+            alphamissense_score=0.45,  # ambiguous range
             revel_score=None,
         )
-        assert result.applies is False, (
-            "Ambiguous range (0.340–0.564) should yield no PP3/BP4 evidence"
-        )
+        assert (
+            result.applies is False
+        ), "Ambiguous range (0.340–0.564) should yield no PP3/BP4 evidence"
 
 
 # ===========================================================================
@@ -234,9 +242,9 @@ class TestPVS1:
     ) -> None:
         """PVS1 on non-MANE transcript is reduced by one level (ACGS 2024 §5)."""
         non_mane_transcript = TranscriptData(
-            transcript_id="NM_007298.3",   # Non-MANE BRCA1 transcript
+            transcript_id="NM_007298.3",  # Non-MANE BRCA1 transcript
             gene_symbol="BRCA1",
-            is_mane_select=False,           # NOT MANE Select
+            is_mane_select=False,  # NOT MANE Select
             is_canonical=False,
             lof_disease_mechanism=True,
             exon_count=23,
@@ -253,12 +261,14 @@ class TestPVS1:
             "per ACGS 2024 v1.2 §5"
         )
 
-    def test_pvs1_does_not_apply_in_non_lof_gene(self, tp53_missense_pathogenic, brca1_transcript) -> None:
+    def test_pvs1_does_not_apply_in_non_lof_gene(
+        self, tp53_missense_pathogenic, brca1_transcript
+    ) -> None:
         """PVS1 does not apply when LoF is not the established disease mechanism."""
         non_lof_gene = GeneData(
             gene_symbol="KCNQ1",
             omim_id="OMIM:192500",
-            lof_mechanism=False,    # Gain-of-function disease; LoF not established
+            lof_mechanism=False,  # Gain-of-function disease; LoF not established
             pli=0.85,
             has_vcep_specification=True,
         )
@@ -301,7 +311,6 @@ class TestNovelCombinations:
         instead of Supporting (1 pt), total = 10 pts → Pathogenic instead of LP.
         The test specifically validates 9 pts = LP, not 10 pts = P.
         """
-        from bayesacmg.models import ClassificationResult, STRENGTH_POINTS
 
         # Simulate applying the two rules
         pvs1_result = rule_pvs1(
@@ -319,9 +328,9 @@ class TestNovelCombinations:
 
         assert pvs1_result.applies is True
         assert pm2_result.applies is True
-        assert pm2_result.strength == EvidenceStrength.SUPPORTING, (
-            "PM2 returned non-SUPPORTING strength — this will break the LP classification"
-        )
+        assert (
+            pm2_result.strength == EvidenceStrength.SUPPORTING
+        ), "PM2 returned non-SUPPORTING strength — this will break the LP classification"
 
         # Compute total points
         rules = [pvs1_result, pm2_result]
@@ -335,13 +344,13 @@ class TestNovelCombinations:
 
         # 9 pts ≥ 6 → LP (not P which requires ≥ 10 pts)
         classification = apply_novel_combinations(rules, total_pts)
-        assert "Likely Pathogenic" in classification.classification, (
-            f"Expected 'Likely Pathogenic' at 9 pts, got: {classification.classification}"
-        )
+        assert (
+            "Likely Pathogenic" in classification.classification
+        ), f"Expected 'Likely Pathogenic' at 9 pts, got: {classification.classification}"
         # Also verify it's NOT classified as Pathogenic (which would require ≥ 10 pts)
-        assert classification.classification != "Pathogenic", (
-            "9 pts should give LP, not P. P requires ≥ 10 pts (Richards 2015)."
-        )
+        assert (
+            classification.classification != "Pathogenic"
+        ), "9 pts should give LP, not P. P requires ≥ 10 pts (Richards 2015)."
 
     def test_pvs1_alone_does_not_reach_lp(self, brca2_novel_lof, brca1_gene) -> None:
         """PVS1 alone (8 pts) reaches LP threshold (≥ 6) but not P threshold (≥ 10)."""

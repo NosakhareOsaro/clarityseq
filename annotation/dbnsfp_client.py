@@ -44,7 +44,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -84,14 +83,14 @@ class DbNSFPScores:
         raw: Full dict of raw column values for auditing.
     """
 
-    revel: Optional[float] = None
-    bayesdel_noaf: Optional[float] = None
-    bayesdel_addaf: Optional[float] = None
-    cadd_phred: Optional[float] = None
-    cadd_raw: Optional[float] = None
-    alphamissense: Optional[float] = None
-    esm1b: Optional[float] = None
-    transcript_id: Optional[str] = None
+    revel: float | None = None
+    bayesdel_noaf: float | None = None
+    bayesdel_addaf: float | None = None
+    cadd_phred: float | None = None
+    cadd_raw: float | None = None
+    alphamissense: float | None = None
+    esm1b: float | None = None
+    transcript_id: str | None = None
     raw: dict[str, str] = field(default_factory=dict)
 
 
@@ -119,13 +118,13 @@ class DbNSFPClient:
 
     def __init__(
         self,
-        db_path: Optional[str | Path] = None,
-        preferred_transcript: Optional[str] = None,
+        db_path: str | Path | None = None,
+        preferred_transcript: str | None = None,
     ) -> None:
-        self._db_path: Optional[Path] = Path(db_path) if db_path else None
+        self._db_path: Path | None = Path(db_path) if db_path else None
         self._preferred_transcript = preferred_transcript
-        self._header: Optional[list[str]] = None
-        self._col_index: Optional[dict[str, int]] = None
+        self._header: list[str] | None = None
+        self._col_index: dict[str, int] | None = None
 
         if self._db_path and not self._db_path.exists():
             raise FileNotFoundError(f"dbNSFP file not found: {self._db_path}")
@@ -140,7 +139,7 @@ class DbNSFPClient:
         pos: int,
         ref: str,
         alt: str,
-        transcript_id: Optional[str] = None,
+        transcript_id: str | None = None,
     ) -> DbNSFPScores:
         """Retrieve all predictor scores for a missense variant.
 
@@ -166,10 +165,12 @@ class DbNSFPClient:
         try:
             return self._tabix_lookup(chrom, pos, ref, alt, use_transcript)
         except Exception as exc:  # noqa: BLE001
-            logger.error("dbNSFP lookup failed for %s:%d %s>%s: %s", chrom, pos, ref, alt, exc)
+            logger.error(
+                "dbNSFP lookup failed for %s:%d %s>%s: %s", chrom, pos, ref, alt, exc
+            )
             return DbNSFPScores()
 
-    def classify_revel(self, score: Optional[float]) -> str:
+    def classify_revel(self, score: float | None) -> str:
         """Classify a REVEL score according to ClinGen SVI 2024 thresholds.
 
         Args:
@@ -186,7 +187,7 @@ class DbNSFPClient:
             return "BP4"
         return "ambiguous"
 
-    def classify_bayesdel(self, score: Optional[float]) -> str:
+    def classify_bayesdel(self, score: float | None) -> str:
         """Classify a BayesDel_noAF score according to ClinGen SVI 2024 thresholds.
 
         Args:
@@ -213,7 +214,7 @@ class DbNSFPClient:
         pos: int,
         ref: str,
         alt: str,
-        preferred_transcript: Optional[str],
+        preferred_transcript: str | None,
     ) -> DbNSFPScores:
         """Perform a tabix fetch and parse matching rows.
 
@@ -304,7 +305,7 @@ class DbNSFPClient:
     @staticmethod
     def _build_scores(
         raw: dict[str, str],
-        transcript_id: Optional[str],
+        transcript_id: str | None,
         _fields: list[str],
     ) -> DbNSFPScores:
         """Construct DbNSFPScores from a raw column value dict.
@@ -317,9 +318,10 @@ class DbNSFPClient:
         Returns:
             Populated DbNSFPScores instance.
         """
+
         # dbNSFP may store multiple semicolon-separated values per row (isoforms)
         # We take the maximum numeric value where multiple exist
-        def best(key: str) -> Optional[float]:
+        def best(key: str) -> float | None:
             val = raw.get(key, "")
             nums = [_parse_float(v) for v in val.split(";") if v]
             nums = [n for n in nums if n is not None]
@@ -355,7 +357,7 @@ def _normalise_chrom(chrom: str) -> str:
     return chrom if chrom.startswith("chr") else f"chr{chrom}"
 
 
-def _parse_float(value: Optional[str]) -> Optional[float]:
+def _parse_float(value: str | None) -> float | None:
     """Convert a string to float, returning None on failure.
 
     Args:

@@ -9,15 +9,15 @@ Validates:
 
 from __future__ import annotations
 
-import pytest
+import gzip
 
 from annotation.mane_select import (
     adjust_pvs1_for_mane,
     get_mane_select_ensembl_for_gene,
     get_mane_select_for_gene,
     is_mane_select,
+    load_mane_summary,
 )
-
 
 # ---------------------------------------------------------------------------
 # Tests for is_mane_select()
@@ -187,3 +187,95 @@ class TestAdjustPvs1ForMane:
         second = adjust_pvs1_for_mane(first, is_mane=False)
         assert first == "PS1"
         assert second == "PM1"
+
+
+# ---------------------------------------------------------------------------
+# Tests for load_mane_summary()
+#
+# Note: load_mane_summary is decorated with @lru_cache(maxsize=1), so each
+# test below must use a distinct summary_path (tmp_path is unique per test)
+# to avoid reading a stale cached result from a previous test.
+# ---------------------------------------------------------------------------
+
+
+# Sample rows (tab-separated) matching the documented MANE summary format:
+# #NCBI_GeneID Ensembl_Gene GeneSymbol name RefSeq_nuc RefSeq_prot
+# Ensembl_nuc Ensembl_prot MANE_status GRCh38_chr chr_start chr_end chr_strand
+_MANE_SELECT_ROW = (
+    "123\tENSG00000000123\tTESTGENE\tTest gene\tNM_999999.1\tNP_999999.1\t"
+    "ENST00000999999.1\tENSP00000999999.1\tMANE Select\tchr1\t100\t200\t+\n"
+)
+_MANE_PLUS_CLINICAL_ROW = (
+    "456\tENSG00000000456\tOTHERGENE\tOther gene\tNM_888888.1\tNP_888888.1\t"
+    "ENST00000888888.1\tENSP00000888888.1\tMANE Plus Clinical\tchr2\t300\t400\t-\n"
+)
+_SHORT_ROW = "789\tENSG1\tSHORTGENE\n"  # Fewer than 9 columns — must be skipped
+_COMMENT_LINE = "#NCBI_GeneID\tEnsembl_Gene\tGeneSymbol\n"
+
+
+class TestLoadManeSummary:
+    """Tests for load_mane_summary() file parsing."""
+
+    def test_missing_file_returns_empty_dict(self, tmp_path) -> None:
+        """A summary_path that doesn't exist returns an empty registry."""
+        missing = tmp_path / "does_not_exist.summary.txt"
+        result = load_mane_summary(str(missing))
+        assert result == {}
+
+    def test_plain_text_file_parsed(self, tmp_path) -> None:
+        """A plain-text (non-gzipped) summary file should be read via open()."""
+        summary_file = tmp_path / "MANE.GRCh38.plain.summary.txt"
+        summary_file.write_text(
+            _COMMENT_LINE + _MANE_SELECT_ROW + _MANE_PLUS_CLINICAL_ROW + _SHORT_ROW
+        )
+
+        registry = load_mane_summary(str(summary_file))
+
+        assert registry["TESTGENE"] == ("NM_999999.1", "ENST00000999999.1")
+
+    def test_mane_plus_clinical_not_registered(self, tmp_path) -> None:
+        """Only MANE Select (not MANE Plus Clinical) rows are registered."""
+        summary_file = tmp_path / "MANE.GRCh38.plusclin.summary.txt"
+        summary_file.write_text(
+            _COMMENT_LINE + _MANE_SELECT_ROW + _MANE_PLUS_CLINICAL_ROW
+        )
+
+        registry = load_mane_summary(str(summary_file))
+
+        assert "OTHERGENE" not in registry
+        assert "TESTGENE" in registry
+
+    def test_short_row_skipped(self, tmp_path) -> None:
+        """Rows with fewer than 9 tab-separated columns are skipped."""
+        summary_file = tmp_path / "MANE.GRCh38.short.summary.txt"
+        summary_file.write_text(_COMMENT_LINE + _SHORT_ROW)
+
+        registry = load_mane_summary(str(summary_file))
+
+        assert registry == {}
+
+    def test_gzipped_file_parsed(self, tmp_path) -> None:
+        """A .gz summary file should be opened via gzip.open()."""
+        summary_file = tmp_path / "MANE.GRCh38.gzipped.summary.txt.gz"
+        with gzip.open(summary_file, "wt", encoding="utf-8") as fh:
+            fh.write(_COMMENT_LINE)
+            fh.write(_MANE_SELECT_ROW)
+
+        registry = load_mane_summary(str(summary_file))
+
+        assert registry["TESTGENE"] == ("NM_999999.1", "ENST00000999999.1")
+
+    def test_oserror_during_read_returns_partial_or_empty_registry(
+        self, tmp_path
+    ) -> None:
+        """An OSError while reading (e.g. path is a directory) is caught and
+        a registry (possibly empty) is returned rather than raising."""
+        # A directory satisfies path.exists() but cannot be opened as a file,
+        # triggering IsADirectoryError (a subclass of OSError) inside the
+        # try/except block.
+        bad_path = tmp_path / "not_a_file.summary.txt"
+        bad_path.mkdir()
+
+        registry = load_mane_summary(str(bad_path))
+
+        assert registry == {}

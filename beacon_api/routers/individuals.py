@@ -157,9 +157,13 @@ async def query_individuals(
     ) if ga4gh_visas else False
 
     if not has_access:
-        # Allow if no visas provided but passport is valid (development mode)
-        # In production: raise 403 Forbidden
-        pass
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=(
+                "Passport lacks required visa claims: ResearcherStatus or "
+                "ControlledAccessGrants."
+            ),
+        )
 
     if not any([phenotype_id, disease_id, sex]):
         raise HTTPException(

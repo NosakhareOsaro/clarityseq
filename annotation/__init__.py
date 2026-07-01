@@ -21,7 +21,11 @@ References
 from annotation.alphamissense_client import AlphaMissenseClient, classify_am_score
 from annotation.clinvar_client import ClinVarClient, ClinVarData
 from annotation.gnomad_client import GnomADClient, GnomADData
-from annotation.mane_select import adjust_pvs1_for_mane, get_mane_select_for_gene, is_mane_select
+from annotation.mane_select import (
+    adjust_pvs1_for_mane,
+    get_mane_select_for_gene,
+    is_mane_select,
+)
 from annotation.vep_runner import VEPRunner
 
 __version__ = "0.1.0"

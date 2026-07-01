@@ -52,6 +52,7 @@ _ACMG_SCORES: dict[str, float] = {
 # Aliases for different ACMG classification string formats
 _ACMG_ALIASES: dict[str, str] = {
     "P": "Pathogenic",
+    "PATHOGENIC": "Pathogenic",
     "LP": "Likely_Pathogenic",
     "LIKELY_PATHOGENIC": "Likely_Pathogenic",
     "LIKELY PATHOGENIC": "Likely_Pathogenic",
