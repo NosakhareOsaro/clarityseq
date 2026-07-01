@@ -1,4 +1,4 @@
-# ClaritySeq — Claude Code Build Prompt (FINAL, UPDATED)
+# ClaritySeq — Build Prompt (FINAL, UPDATED)
 
 ## Complete Start-to-Finish Instructions · June 2026 Edition
 
@@ -7,8 +7,8 @@
 ---
 
 > **How to use this prompt:**
-> Open Claude Code in your terminal (`claude`) and paste this entire document.
-> Claude Code will read it top-to-bottom and execute every step in order.
+> Open a coding agent in your terminal and paste this entire document.
+> The agent will read it top-to-bottom and execute every step in order.
 > Each section ends with a `git commit` checkpoint.
 > Do not skip sections — later steps depend on earlier ones.
 > This is the ONLY prompt you need. Do not use any previous version.
@@ -2043,7 +2043,7 @@ print('Beacon v2.1.1 ✓')
 
 ---
 
-## NON-NEGOTIABLE RULES FOR CLAUDE CODE
+## NON-NEGOTIABLE RULES FOR THE BUILD AGENT
 
 1. **Never skip a commit.** Every numbered commit section executes exactly as
    written. Conventional Commits format required (auto-generates changelog).
@@ -2082,7 +2082,7 @@ print('Beacon v2.1.1 ✓')
 
 ---
 
-_ClaritySeq Claude Code Prompt — FINAL VERSION — June 2026_
+_ClaritySeq Build Prompt — FINAL VERSION — June 2026_
 _All tools verified against: ACGS 2024 v1.2 (Durkie et al., Feb 2024) ·_
 _ClinGen SVI 2024 guidelines · GATK Best Practices (DRAGEN-GATK) ·_
 _DeepVariant 1.8.0 release notes · gnomAD v4.1 release notes (April 2024) ·_
