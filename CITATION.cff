@@ -11,7 +11,8 @@ title: >-
   reclassification monitoring, and GA4GH Beacon v2.1.1 federation
 
 version: "0.1.0"
-date-released: "2026-06-23"
+doi: 10.5281/zenodo.21530556
+date-released: "2026-07-24"
 
 abstract: >-
   ClaritySeq is a production-grade, research-novel whole-genome sequencing
