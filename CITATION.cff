@@ -37,14 +37,14 @@ repository-code: "https://github.com/NosakhareOsaro/clarityseq"
 repository-artifact: "https://github.com/NosakhareOsaro/clarityseq/releases"
 
 authors:
-  - family-names: "Nosakhare"
-    given-names: "Osaronos"
+  - family-names: "Osaro"
+    given-names: "Nosakhare Odionfo"
     email: "osaronosakhare@gmail.com"
-    orcid: ""
+    orcid: "https://orcid.org/0009-0004-9778-1161"
 
 contact:
-  - family-names: "Nosakhare"
-    given-names: "Osaronos"
+  - family-names: "Osaro"
+    given-names: "Nosakhare Odionfo"
     email: "osaronosakhare@gmail.com"
 
 keywords:
